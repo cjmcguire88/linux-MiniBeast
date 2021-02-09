@@ -3,19 +3,19 @@
 ___
 
 ### KEY FEATURES
-+ Removed NUMA support which is only useful on systems with more than one processor
-+ 1000hz timer freq for low latency
-+ PREEMPT (low latency desktop)
-+ RCU priority boosting enabled
-+ lz4 compression (fastest tested on this laptop)
-+ -O2 optimization level
-+ Tailor made for MSI GF63 Thin 9SC
++ Removed NUMA support which is only useful on systems with more than one processor [Non-uniform memory access](https://en.wikipedia.org/wiki/Non-uniform_memory_access)  
++ 1000hz timer freq for low latency [Timer frequency](https://elinux.org/Kernel_Timer_Systems)
++ PREEMPT (low latency desktop) [Kernel preemption](https://en.wikipedia.org/wiki/Kernel_preemption) 
++ RCU priority boosting enabled [RCU priority boosting](https://wiki.linuxfoundation.org/realtime/documentation/technical_details/rcu#rcu_priority_boosting)
++ lz4 compression (fastest tested on this laptop) [LZ4 compression](https://en.wikipedia.org/wiki/LZ4_(compression_algorithm))
++ -O2 optimization level [Optimization levels](https://gcc.gnu.org/onlinedocs/gnat_ugn/Optimization-Levels.html)
 + BBR tcp congestion algorithm [TCP congestion control](https://en.wikipedia.org/wiki/TCP_congestion_control)
++ Tailor made for MSI GF63 Thin 9SC
 
 ### PATCHES
-+ Build optimized for Intel Skylake using graysky's gcc patch
-+ Muqss cpu scheduler by Con Kolivas (ck patchset)
-+ Clear Linux patches:  
++ Build optimized for Intel Skylake using graysky's gcc patch [Repo](https://github.com/graysky2/kernel_gcc_patch)
++ Muqss cpu scheduler by Con Kolivas (ck patchset) [Linux-ck](https://wiki.archlinux.org/index.php/linux-ck)
++ Clear Linux patches: [Repo](https://github.com/clearlinux-pkgs/linux)  
     *intel_idle-tweak-cpuidle-cstates*  
     tunes intel idle to be less aggressive  
     
