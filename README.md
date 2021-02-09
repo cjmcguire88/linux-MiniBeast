@@ -3,7 +3,7 @@
 ___
 
 ### KEY FEATURES
-+ Removed NUMA support which is only useful on systems with more than one processor [Non-uniform memory access](https://en.wikipedia.org/wiki/Non-uniform_memory_access)  
++ Disabled NUMA [Non-uniform memory access](https://en.wikipedia.org/wiki/Non-uniform_memory_access) | [Dicussion](https://unix.stackexchange.com/questions/92302/enabling-numa-for-intel-core-i7)
 + 1000hz timer freq for low latency [Timer frequency](https://elinux.org/Kernel_Timer_Systems)
 + PREEMPT (low latency desktop) [Kernel preemption](https://en.wikipedia.org/wiki/Kernel_preemption) 
 + RCU priority boosting enabled [RCU priority boosting](https://wiki.linuxfoundation.org/realtime/documentation/technical_details/rcu#rcu_priority_boosting)
