@@ -50,11 +50,10 @@ my kernel as well.
 
 Mostly what makes this kernel special is it has all the unnecessary options and drivers disabled.  
 The only things enabled are what is essential to obtaining the best possible performance of this    
-laptop's specific hardware. This leaves the kernel very "lightweight. This however makes it a  
+laptop's specific hardware. This makes the kernel very "lightweight. This however makes it a  
 specific use kernel and it will not boot on any hardware other than the MSI GF63 Thin 9SC. I'd  
-like to stay in sync with the mainline kernel, but I only update if there are significant feature  
-releases. For example, the reason I've updated to 5.10.10 is because of the performance improvements  
-to the btrfs filesystem, which I use, introduced in the 5.10.x kernel.
+like to stay in sync with the stable kernel, but what I'll likely begin doing is updating when a  
+major version is released i.e. 5.10.0 > 5.11.0.
 
 ### Make sure you have a backup kernel!!!
 
