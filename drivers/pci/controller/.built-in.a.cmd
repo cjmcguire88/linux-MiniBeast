@@ -1,0 +1,1 @@
+cmd_drivers/pci/controller/built-in.a := rm -f drivers/pci/controller/built-in.a; ar cDPrST drivers/pci/controller/built-in.a drivers/pci/controller/pci-ftpci100.o drivers/pci/controller/pci-host-common.o drivers/pci/controller/pci-host-generic.o drivers/pci/controller/pcie-xilinx.o drivers/pci/controller/dwc/built-in.a drivers/pci/controller/mobiveil/built-in.a

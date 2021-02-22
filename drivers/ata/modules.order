@@ -1,0 +1,4 @@
+drivers/ata/ahci.ko
+drivers/ata/libahci.ko
+drivers/ata/ahci_platform.ko
+drivers/ata/libahci_platform.ko

@@ -1,4 +1,5 @@
 choice
+	depends on SMP
 	prompt "CPU scheduler runqueue sharing"
 	default RQ_MC if SCHED_MUQSS
 	default RQ_NONE

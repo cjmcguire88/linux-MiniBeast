@@ -1,0 +1,25 @@
+!<thin>
+//                                              196       `
+thermal_core.o/
+thermal_sysfs.o/
+thermal_helpers.o/
+thermal_netlink.o/
+thermal_hwmon.o/
+thermal_of.o/
+gov_fair_share.o/
+gov_bang_bang.o/
+gov_step_wise.o/
+gov_user_space.o/
+gov_power_allocator.o/
+
+/0              0           0     0     644     79928     `
+/16             0           0     0     644     29200     `
+/33             0           0     0     644     13688     `
+/52             0           0     0     644     28088     `
+/71             0           0     0     644     14616     `
+/88             0           0     0     644     29408     `
+/102            0           0     0     644     4816      `
+/120            0           0     0     644     6008      `
+/137            0           0     0     644     7904      `
+/154            0           0     0     644     3400      `
+/172            0           0     0     644     28480     `

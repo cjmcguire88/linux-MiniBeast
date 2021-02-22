@@ -1,0 +1,102 @@
+!<thin>
+//                                              782       `
+access.o/
+bus.o/
+probe.o/
+host-bridge.o/
+remove.o/
+pci.o/
+pci-driver.o/
+search.o/
+pci-sysfs.o/
+rom.o/
+setup-res.o/
+irq.o/
+vpd.o/
+setup-bus.o/
+vc.o/
+mmap.o/
+setup-irq.o/
+msi.o/
+pcie/portdrv_core.o/
+pcie/portdrv_pci.o/
+pcie/err.o/
+pcie/rcec.o/
+pcie/aspm.o/
+pcie/aer.o/
+pcie/pme.o/
+pcie/dpc.o/
+pcie/ptm.o/
+proc.o/
+slot.o/
+pci-acpi.o/
+of.o/
+quirks.o/
+ats.o/
+iov.o/
+pci-label.o/
+pci-stub.o/
+ecam.o/
+endpoint/pci-ep-cfs.o/
+endpoint/pci-epc-core.o/
+endpoint/pci-epf-core.o/
+endpoint/pci-epc-mem.o/
+controller/pci-ftpci100.o/
+controller/pci-host-common.o/
+controller/pci-host-generic.o/
+controller/pcie-xilinx.o/
+controller/dwc/pcie-designware.o/
+controller/dwc/pcie-designware-host.o/
+controller/dwc/pcie-designware-ep.o/
+controller/dwc/pcie-designware-plat.o/
+controller/dwc/pci-meson.o/
+/0              0           0     0     644     43136     `
+/10             0           0     0     644     19520     `
+/17             0           0     0     644     87008     `
+/26             0           0     0     644     5072      `
+/41             0           0     0     644     9512      `
+/51             0           0     0     644     211208    `
+/58             0           0     0     644     41152     `
+/72             0           0     0     644     14832     `
+/82             0           0     0     644     47696     `
+/95             0           0     0     644     7840      `
+/102            0           0     0     644     18152     `
+/115            0           0     0     644     3864      `
+/122            0           0     0     644     22600     `
+/129            0           0     0     644     55576     `
+/142            0           0     0     644     9824      `
+/148            0           0     0     644     4024      `
+/156            0           0     0     644     4296      `
+/169            0           0     0     644     45224     `
+/176            0           0     0     644     13496     `
+/197            0           0     0     644     11288     `
+/217            0           0     0     644     10160     `
+/229            0           0     0     644     7248      `
+/242            0           0     0     644     35168     `
+/255            0           0     0     644     45544     `
+/267            0           0     0     644     14552     `
+/279            0           0     0     644     15256     `
+/291            0           0     0     644     8048      `
+/303            0           0     0     644     17200     `
+/311            0           0     0     644     14048     `
+/319            0           0     0     644     29600     `
+/331            0           0     0     644     22528     `
+/337            0           0     0     644     211192    `
+/347            0           0     0     644     16168     `
+/354            0           0     0     644     32312     `
+/361            0           0     0     644     8352      `
+/374            0           0     0     644     7968      `
+/386            0           0     0     644     8248      `
+/394            0           0     0     644     33128     `
+/417            0           0     0     644     36744     `
+/442            0           0     0     644     19712     `
+/467            0           0     0     644     10552     `
+/491            0           0     0     644     18880     `
+/518            0           0     0     644     6400      `
+/548            0           0     0     644     6248      `
+/579            0           0     0     644     17584     `
+/605            0           0     0     644     23720     `
+/639            0           0     0     644     27104     `
+/678            0           0     0     644     29032     `
+/715            0           0     0     644     8104      `
+/754            0           0     0     644     16928     `

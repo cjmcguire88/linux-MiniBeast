@@ -1,0 +1,12 @@
+!<thin>
+//                                              102       `
+pcie-designware.o/
+pcie-designware-host.o/
+pcie-designware-ep.o/
+pcie-designware-plat.o/
+pci-meson.o/
+/0              0           0     0     644     23720     `
+/19             0           0     0     644     27104     `
+/43             0           0     0     644     29032     `
+/65             0           0     0     644     8104      `
+/89             0           0     0     644     16928     `

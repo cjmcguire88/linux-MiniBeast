@@ -1,0 +1,1 @@
+cmd_drivers/misc/mei/modules.order := {   echo drivers/misc/mei/mei.ko;   echo drivers/misc/mei/mei-me.ko;   cat drivers/misc/mei/hdcp/modules.order; :; } | awk '!x[$$0]++' - > drivers/misc/mei/modules.order

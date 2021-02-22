@@ -1,0 +1,20 @@
+!<thin>
+//                                              192       `
+pci-ftpci100.o/
+pci-host-common.o/
+pci-host-generic.o/
+pcie-xilinx.o/
+dwc/pcie-designware.o/
+dwc/pcie-designware-host.o/
+dwc/pcie-designware-ep.o/
+dwc/pcie-designware-plat.o/
+dwc/pci-meson.o/
+/0              0           0     0     644     18880     `
+/16             0           0     0     644     6400      `
+/35             0           0     0     644     6248      `
+/55             0           0     0     644     17584     `
+/70             0           0     0     644     23720     `
+/93             0           0     0     644     27104     `
+/121            0           0     0     644     29032     `
+/147            0           0     0     644     8104      `
+/175            0           0     0     644     16928     `

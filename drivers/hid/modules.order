@@ -1,0 +1,4 @@
+drivers/hid/hid.ko
+drivers/hid/hid-generic.ko
+drivers/hid/hid-multitouch.ko
+drivers/hid/i2c-hid/i2c-hid.ko

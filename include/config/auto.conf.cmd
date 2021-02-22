@@ -19,6 +19,7 @@ deps_config := \
 	lib/Kconfig \
 	certs/Kconfig \
 	crypto/asymmetric_keys/Kconfig \
+	drivers/crypto/keembay/Kconfig \
 	drivers/crypto/amlogic/Kconfig \
 	drivers/crypto/hisilicon/Kconfig \
 	drivers/crypto/stm32/Kconfig \
@@ -125,6 +126,7 @@ deps_config := \
 	fs/Kconfig \
 	drivers/most/Kconfig \
 	drivers/counter/Kconfig \
+	drivers/interconnect/samsung/Kconfig \
 	drivers/interconnect/qcom/Kconfig \
 	drivers/interconnect/imx/Kconfig \
 	drivers/interconnect/Kconfig \
@@ -169,6 +171,7 @@ deps_config := \
 	drivers/phy/mediatek/Kconfig \
 	drivers/phy/marvell/Kconfig \
 	drivers/phy/lantiq/Kconfig \
+	drivers/phy/ingenic/Kconfig \
 	drivers/phy/hisilicon/Kconfig \
 	drivers/phy/freescale/Kconfig \
 	drivers/phy/cadence/Kconfig \
@@ -252,6 +255,7 @@ deps_config := \
 	drivers/soc/renesas/Kconfig \
 	drivers/soc/qcom/Kconfig \
 	drivers/soc/mediatek/Kconfig \
+	drivers/soc/litex/Kconfig \
 	drivers/soc/ixp4xx/Kconfig \
 	drivers/soc/imx/Kconfig \
 	drivers/soc/fsl/qe/Kconfig \
@@ -301,6 +305,7 @@ deps_config := \
 	drivers/clk/actions/Kconfig \
 	drivers/clk/versatile/Kconfig \
 	drivers/clk/Kconfig \
+	drivers/platform/surface/Kconfig \
 	drivers/platform/olpc/Kconfig \
 	drivers/platform/mellanox/Kconfig \
 	drivers/platform/chrome/wilco_ec/Kconfig \
@@ -312,6 +317,8 @@ deps_config := \
 	drivers/platform/Kconfig \
 	drivers/staging/hikey9xx/Kconfig \
 	drivers/staging/wfx/Kconfig \
+	drivers/staging/wimax/i2400m/Kconfig \
+	drivers/staging/wimax/Kconfig \
 	drivers/staging/qlge/Kconfig \
 	drivers/staging/kpc2000/Kconfig \
 	drivers/staging/fieldbus/anybuss/Kconfig \
@@ -321,8 +328,6 @@ deps_config := \
 	drivers/staging/mt7621-dts/Kconfig \
 	drivers/staging/ralink-gdma/Kconfig \
 	drivers/staging/mt7621-dma/Kconfig \
-	drivers/staging/mt7621-pinctrl/Kconfig \
-	drivers/staging/mt7621-pci-phy/Kconfig \
 	drivers/staging/mt7621-pci/Kconfig \
 	drivers/staging/pi433/Kconfig \
 	drivers/staging/vc04_services/vchiq-mmal/Kconfig \
@@ -346,13 +351,10 @@ deps_config := \
 	drivers/staging/unisys/Kconfig \
 	drivers/staging/gs_fpgaboot/Kconfig \
 	drivers/staging/netlogic/Kconfig \
-	drivers/staging/goldfish/Kconfig \
 	drivers/staging/fwserial/Kconfig \
 	drivers/staging/gdm724x/Kconfig \
 	drivers/staging/board/Kconfig \
-	drivers/staging/android/ion/Kconfig \
 	drivers/staging/android/Kconfig \
-	drivers/staging/media/rkisp1/Kconfig \
 	drivers/staging/media/ipu3/Kconfig \
 	drivers/staging/media/tegra-video/Kconfig \
 	drivers/staging/media/zoran/Kconfig \
@@ -458,6 +460,7 @@ deps_config := \
 	drivers/accessibility/speakup/Kconfig \
 	drivers/accessibility/Kconfig \
 	drivers/leds/trigger/Kconfig \
+	drivers/leds/flash/Kconfig \
 	drivers/leds/Kconfig \
 	drivers/memstick/host/Kconfig \
 	drivers/memstick/core/Kconfig \
@@ -498,6 +501,7 @@ deps_config := \
 	drivers/usb/core/Kconfig \
 	drivers/usb/common/Kconfig \
 	drivers/usb/Kconfig \
+	drivers/hid/amd-sfh-hid/Kconfig \
 	drivers/hid/intel-ish-hid/Kconfig \
 	drivers/hid/i2c-hid/Kconfig \
 	drivers/hid/usbhid/Kconfig \
@@ -643,6 +647,7 @@ deps_config := \
 	drivers/gpu/drm/vmwgfx/Kconfig \
 	drivers/gpu/drm/rockchip/Kconfig \
 	drivers/gpu/drm/exynos/Kconfig \
+	drivers/gpu/drm/kmb/Kconfig \
 	drivers/gpu/drm/i915/Kconfig.unstable \
 	drivers/gpu/drm/i915/Kconfig.profile \
 	drivers/gpu/drm/i915/Kconfig.debug \
@@ -668,7 +673,7 @@ deps_config := \
 	drivers/media/tuners/Kconfig \
 	drivers/media/spi/Kconfig \
 	drivers/media/i2c/et8ek8/Kconfig \
-	drivers/media/i2c/smiapp/Kconfig \
+	drivers/media/i2c/ccs/Kconfig \
 	drivers/media/i2c/m5mols/Kconfig \
 	drivers/media/i2c/cx25840/Kconfig \
 	drivers/media/i2c/Kconfig \
@@ -816,6 +821,7 @@ deps_config := \
 	drivers/pinctrl/spear/Kconfig \
 	drivers/pinctrl/samsung/Kconfig \
 	drivers/pinctrl/renesas/Kconfig \
+	drivers/pinctrl/ralink/Kconfig \
 	drivers/pinctrl/qcom/Kconfig \
 	drivers/pinctrl/pxa/Kconfig \
 	drivers/pinctrl/nuvoton/Kconfig \
@@ -875,8 +881,6 @@ deps_config := \
 	drivers/net/hyperv/Kconfig \
 	drivers/net/ieee802154/Kconfig \
 	drivers/net/wan/Kconfig \
-	drivers/net/wimax/i2400m/Kconfig \
-	drivers/net/wimax/Kconfig \
 	drivers/net/wireless/quantenna/qtnfmac/Kconfig \
 	drivers/net/wireless/quantenna/Kconfig \
 	drivers/net/wireless/zydas/zd1211rw/Kconfig \
@@ -1062,6 +1066,7 @@ deps_config := \
 	drivers/net/dsa/ocelot/Kconfig \
 	drivers/net/dsa/mv88e6xxx/Kconfig \
 	drivers/net/dsa/microchip/Kconfig \
+	drivers/net/dsa/hirschmann/Kconfig \
 	drivers/net/dsa/b53/Kconfig \
 	drivers/net/dsa/Kconfig \
 	drivers/net/caif/Kconfig \
@@ -1136,6 +1141,7 @@ deps_config := \
 	drivers/block/zram/Kconfig \
 	drivers/block/mtip32xx/Kconfig \
 	drivers/block/paride/Kconfig \
+	drivers/block/null_blk/Kconfig \
 	drivers/block/Kconfig \
 	drivers/pnp/pnpacpi/Kconfig \
 	drivers/pnp/pnpbios/Kconfig \
@@ -1204,7 +1210,6 @@ deps_config := \
 	net/caif/Kconfig \
 	net/9p/Kconfig \
 	net/rfkill/Kconfig \
-	net/wimax/Kconfig \
 	net/mac80211/Kconfig \
 	net/wireless/Kconfig \
 	net/strparser/Kconfig \
@@ -1352,7 +1357,7 @@ include/config/auto.conf: \
 ifneq "$(ARCH)" "x86"
 include/config/auto.conf: FORCE
 endif
-ifneq "$(KERNELVERSION)" "5.10.14-MiniBeast"
+ifneq "$(KERNELVERSION)" "5.11-MiniBeast"
 include/config/auto.conf: FORCE
 endif
 ifneq "$(CC)" "gcc"
@@ -1377,6 +1382,9 @@ ifneq "$(NM)" "nm"
 include/config/auto.conf: FORCE
 endif
 ifneq "$(OBJCOPY)" "objcopy"
+include/config/auto.conf: FORCE
+endif
+ifneq "$(PAHOLE)" "pahole"
 include/config/auto.conf: FORCE
 endif
 

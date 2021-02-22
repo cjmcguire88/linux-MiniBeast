@@ -1,0 +1,15 @@
+!<thin>
+//                                              110       `
+gpio-poweroff.o/
+gpio-restart.o/
+ltc2952-poweroff.o/
+restart-poweroff.o/
+syscon-reboot.o/
+syscon-poweroff.o/
+
+/0              0           0     0     644     8448      `
+/17             0           0     0     644     9056      `
+/33             0           0     0     644     10824     `
+/53             0           0     0     644     6256      `
+/73             0           0     0     644     6448      `
+/90             0           0     0     644     7104      `

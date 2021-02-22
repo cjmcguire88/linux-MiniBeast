@@ -1,0 +1,1 @@
+cmd_arch/x86/events/intel/intel-uncore.ko := ld -r -m elf_x86_64 --build-id=sha1  -T scripts/module.lds -o arch/x86/events/intel/intel-uncore.ko arch/x86/events/intel/intel-uncore.o arch/x86/events/intel/intel-uncore.mod.o;  true

@@ -822,3 +822,8 @@ __SYSCALL_I386(437, sys_openat2)
 __SYSCALL_I386(438, sys_pidfd_getfd)
 __SYSCALL_I386(439, sys_faccessat2)
 __SYSCALL_I386(440, sys_process_madvise)
+#ifdef CONFIG_X86_32
+__SYSCALL_I386(441, sys_epoll_pwait2)
+#else
+__SYSCALL_I386(441, compat_sys_epoll_pwait2)
+#endif

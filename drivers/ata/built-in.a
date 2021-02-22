@@ -1,0 +1,20 @@
+!<thin>
+//                                              146       `
+libata-core.o/
+libata-scsi.o/
+libata-eh.o/
+libata-transport.o/
+libata-trace.o/
+libata-sata.o/
+libata-pmp.o/
+libata-acpi.o/
+libata-pata-timings.o/
+/0              0           0     0     644     213632    `
+/15             0           0     0     644     76656     `
+/30             0           0     0     644     84736     `
+/43             0           0     0     644     27312     `
+/63             0           0     0     644     8808      `
+/79             0           0     0     644     50216     `
+/94             0           0     0     644     22592     `
+/108            0           0     0     644     26488     `
+/123            0           0     0     644     7248      `

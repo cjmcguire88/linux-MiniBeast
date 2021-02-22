@@ -1,0 +1,5 @@
+drivers/usb/host/xhci-hcd.ko
+drivers/usb/host/xhci-pci.ko
+drivers/usb/storage/uas.ko
+drivers/usb/storage/usb-storage.ko
+drivers/usb/misc/apple-mfi-fastcharge.ko

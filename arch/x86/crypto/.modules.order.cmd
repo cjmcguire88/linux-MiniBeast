@@ -1,0 +1,1 @@
+cmd_arch/x86/crypto/modules.order := {   echo arch/x86/crypto/glue_helper.ko;   echo arch/x86/crypto/aesni-intel.ko;   echo arch/x86/crypto/ghash-clmulni-intel.ko;   echo arch/x86/crypto/crc32-pclmul.ko;   echo arch/x86/crypto/crct10dif-pclmul.ko; :; } | awk '!x[$$0]++' - > arch/x86/crypto/modules.order

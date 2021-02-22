@@ -1,0 +1,31 @@
+!<thin>
+//                                              196       `
+intel/dmar.o/
+intel/iommu.o/
+intel/pasid.o/
+intel/trace.o/
+intel/svm.o/
+intel/irq_remapping.o/
+iommu.o/
+iommu-traces.o/
+iommu-sysfs.o/
+dma-iommu.o/
+ioasid.o/
+iova.o/
+of_iommu.o/
+irq_remapping.o/
+
+/0              0           0     0     644     68136     `
+/14             0           0     0     644     138384    `
+/29             0           0     0     644     24040     `
+/44             0           0     0     644     27384     `
+/59             0           0     0     644     31280     `
+/72             0           0     0     644     37880     `
+/95             0           0     0     644     122528    `
+/104            0           0     0     644     48832     `
+/120            0           0     0     644     8848      `
+/135            0           0     0     644     36032     `
+/148            0           0     0     644     18960     `
+/158            0           0     0     644     32784     `
+/166            0           0     0     644     9480      `
+/178            0           0     0     644     7432      `

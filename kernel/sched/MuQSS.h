@@ -60,13 +60,20 @@
 # define SCHED_WARN_ON(x)	((void)(x))
 #endif
 
-/*
- * wake flags
- */
-#define WF_SYNC			0x01		/* waker goes to sleep after wakeup */
-#define WF_FORK			0x02		/* child wakeup after fork */
-#define WF_MIGRATED		0x04		/* internal use, task got migrated */
-#define WF_ON_CPU		0x08		/* Wakee is on_cpu */
+/* Wake flags. The first three directly map to some SD flag value */
+#define WF_EXEC     0x02 /* Wakeup after exec; maps to SD_BALANCE_EXEC */
+#define WF_FORK     0x04 /* Wakeup after fork; maps to SD_BALANCE_FORK */
+#define WF_TTWU     0x08 /* Wakeup;            maps to SD_BALANCE_WAKE */
+
+#define WF_SYNC     0x10 /* Waker goes to sleep after wakeup */
+#define WF_MIGRATED 0x20 /* Internal use, task got migrated */
+#define WF_ON_CPU   0x40 /* Wakee is on_cpu */
+
+#ifdef CONFIG_SMP
+static_assert(WF_EXEC == SD_BALANCE_EXEC);
+static_assert(WF_FORK == SD_BALANCE_FORK);
+static_assert(WF_TTWU == SD_BALANCE_WAKE);
+#endif
 
 /* task_struct::on_rq states: */
 #define TASK_ON_RQ_QUEUED	1
@@ -124,11 +131,13 @@ struct root_domain {
 	 */
 	cpumask_var_t dlo_mask;
 	atomic_t dlo_count;
+
 	/* Replace unused CFS structures with void */
 	//struct dl_bw dl_bw;
 	//struct cpudl cpudl;
 	void *dl_bw;
 	void *cpudl;
+	u64 visit_gen;
 
 	/*
 	 * The "RT overload" flag: it gets set if a CPU has more than
@@ -558,6 +567,8 @@ extern struct static_key_false sched_schedstats;
 	rcu_dereference_check((p), \
 			      lockdep_is_held(&sched_domains_mutex))
 
+#define SCA_CHECK		0x01
+
 #ifdef CONFIG_SMP
 
 /*
@@ -691,7 +702,8 @@ static inline void unregister_sched_domain_sysctl(void)
 
 extern void flush_smp_call_function_from_idle(void);
 
-extern void set_cpus_allowed_common(struct task_struct *p, const struct cpumask *new_mask);
+extern void set_cpus_allowed_common(struct task_struct *p, const struct cpumask *new_mask, u32 flags);
+
 extern void set_rq_online (struct rq *rq);
 extern void set_rq_offline(struct rq *rq);
 extern bool sched_smp_initialized;

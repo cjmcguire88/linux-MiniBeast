@@ -1,0 +1,1 @@
+cmd_drivers/acpi/modules.order := {   cat drivers/acpi/acpica/modules.order;   cat drivers/acpi/apei/modules.order;   cat drivers/acpi/pmic/modules.order;   cat drivers/acpi/dptf/modules.order;   echo drivers/acpi/ac.ko;   echo drivers/acpi/battery.ko; :; } | awk '!x[$$0]++' - > drivers/acpi/modules.order
