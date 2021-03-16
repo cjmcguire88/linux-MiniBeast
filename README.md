@@ -60,3 +60,8 @@ major version is released i.e. 5.10.0 > 5.11.0.
 
 ___
 ![laptop](https://images-na.ssl-images-amazon.com/images/I/61YRjVkb%2BuL._AC_SL1500_.jpg)
+
+## Note:  
+I disassembled this laptop and replaced all of the thermal paste with Arctic MX-4 and idle temps  
+dropped 7&deg;C and full load temps by 15-20&deg;C. Not really related to the kernel but  
+interesting for anyone who would like to squeeze a little extra performance out of this thing.
