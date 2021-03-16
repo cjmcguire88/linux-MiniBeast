@@ -3,6 +3,7 @@
 ___
 
 ### KEY FEATURES
++ Intel P-State cpufreq driver [CPUfreq drivers](https://wiki.archlinux.org/index.php/CPU_frequency_scaling#CPU_frequency_driver)
 + Disabled NUMA [Non-uniform memory access](https://en.wikipedia.org/wiki/Non-uniform_memory_access) | [Discussion](https://unix.stackexchange.com/questions/92302/enabling-numa-for-intel-core-i7)
 + 1000hz timer freq for low latency [Timer frequency](https://elinux.org/Kernel_Timer_Systems)
 + PREEMPT (low latency desktop) [Kernel preemption](https://en.wikipedia.org/wiki/Kernel_preemption) 
@@ -10,7 +11,7 @@ ___
 + lz4 compression (fastest tested on this laptop) [LZ4 compression](https://en.wikipedia.org/wiki/LZ4_(compression_algorithm))
 + -O2 optimization level [Optimization levels](https://gcc.gnu.org/onlinedocs/gnat_ugn/Optimization-Levels.html)
 + BBR tcp congestion algorithm [TCP congestion control](https://en.wikipedia.org/wiki/TCP_congestion_control)
-+ Tailor made for MSI GF63 Thin 9SC
++ Tailor made for MSI GF63 Thin 9SC and optimized for Intel
 
 ### PATCHES
 + Build optimized for Intel Skylake using graysky's gcc patch [Repo](https://github.com/graysky2/kernel_gcc_patch)
@@ -43,14 +44,14 @@ Most security options and mitigations (i.e. retpoline) are enabled.
 I have not however disabled hyperthreading as i feel this would  
 absolutely cripple performance. I've enabled everything in netfilter   
 required by most firewalls (ufw, firewalld, etc). I've removed  
-support for SELinux and Tomoyo as these are very complicated to  
-configure and are not as popular as AppArmor which is enabled. Yama  
+support for SELinux and Tomoyo as these can be very complicated to  
+configure and are not as popular as AppArmor which I've enabled. Yama  
 and lockdown are enabled by default in Arch so I have them enabled in  
 my kernel as well.  
 
 Mostly what makes this kernel special is it has all the unnecessary options and drivers disabled.  
 The only things enabled are what is essential to obtaining the best possible performance of this    
-laptop's specific hardware. This makes the kernel very "lightweight. This however makes it a  
+laptop's specific hardware. This makes the kernel image smaller. This however makes it a  
 specific use kernel and it will not boot on any hardware other than the MSI GF63 Thin 9SC. I'd  
 like to stay in sync with the stable kernel, but what I'll likely begin doing is updating when a  
 major version is released i.e. 5.10.0 > 5.11.0.
