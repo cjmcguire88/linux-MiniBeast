@@ -1,1 +1,0 @@
-cmd_drivers/net/phy/modules.order := {   echo drivers/net/phy/mdio_devres.ko;   echo drivers/net/phy/libphy.ko;   echo drivers/net/phy/fixed_phy.ko;   echo drivers/net/phy/realtek.ko; :; } | awk '!x[$$0]++' - > drivers/net/phy/modules.order

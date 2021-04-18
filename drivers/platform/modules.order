@@ -1,4 +1,0 @@
-drivers/platform/x86/wmi.ko
-drivers/platform/x86/wmi-bmof.ko
-drivers/platform/x86/mxm-wmi.ko
-drivers/platform/x86/msi-wmi.ko

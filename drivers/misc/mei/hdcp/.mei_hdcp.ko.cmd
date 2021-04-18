@@ -1,1 +1,0 @@
-cmd_drivers/misc/mei/hdcp/mei_hdcp.ko := ld -r -m elf_x86_64 --build-id=sha1  -T scripts/module.lds -o drivers/misc/mei/hdcp/mei_hdcp.ko drivers/misc/mei/hdcp/mei_hdcp.o drivers/misc/mei/hdcp/mei_hdcp.mod.o;  true

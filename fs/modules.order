@@ -1,8 +1,0 @@
-fs/nls/nls_cp437.ko
-fs/nls/nls_iso8859-1.ko
-fs/mbcache.ko
-fs/ext4/ext4.ko
-fs/jbd2/jbd2.ko
-fs/fat/fat.ko
-fs/fat/vfat.ko
-fs/btrfs/btrfs.ko

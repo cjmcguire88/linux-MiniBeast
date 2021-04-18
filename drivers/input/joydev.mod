@@ -1,2 +1,0 @@
-drivers/input/joydev.o
-

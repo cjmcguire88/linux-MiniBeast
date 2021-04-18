@@ -1,1 +1,0 @@
-cmd_drivers/media/tuners/mc44s803.ko := ld -r -m elf_x86_64 --build-id=sha1  -T scripts/module.lds -o drivers/media/tuners/mc44s803.ko drivers/media/tuners/mc44s803.o drivers/media/tuners/mc44s803.mod.o;  true

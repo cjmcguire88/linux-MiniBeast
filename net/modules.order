@@ -1,4 +1,0 @@
-net/wireless/cfg80211.ko
-net/bluetooth/bluetooth.ko
-net/mac80211/mac80211.ko
-net/rfkill/rfkill.ko

@@ -1,1 +1,0 @@
-cmd_arch/x86/events/intel/intel-uncore.o := ld -m elf_x86_64   -r -o arch/x86/events/intel/intel-uncore.o arch/x86/events/intel/uncore.o arch/x86/events/intel/uncore_nhmex.o arch/x86/events/intel/uncore_snb.o arch/x86/events/intel/uncore_snbep.o

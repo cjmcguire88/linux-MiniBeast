@@ -1,1 +1,0 @@
-cmd_drivers/platform/x86/built-in.a := rm -f drivers/platform/x86/built-in.a; ar cDPrST drivers/platform/x86/built-in.a drivers/platform/x86/intel_pmc_core.o drivers/platform/x86/intel_pmc_core_pltdrv.o drivers/platform/x86/pmc_atom.o

@@ -1,8 +1,0 @@
-crypto/crypto_user.ko
-crypto/cmac.ko
-crypto/ccm.ko
-crypto/cryptd.ko
-crypto/ecc.ko
-crypto/ecdh_generic.ko
-crypto/xor.ko
-crypto/crypto_simd.ko

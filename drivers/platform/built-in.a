@@ -1,9 +1,0 @@
-!<thin>
-//                                              68        `
-x86/intel_pmc_core.o/
-x86/intel_pmc_core_pltdrv.o/
-x86/pmc_atom.o/
-
-/0              0           0     0     644     58568     `
-/22             0           0     0     644     4968      `
-/51             0           0     0     644     22856     `

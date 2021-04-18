@@ -1,1 +1,0 @@
-cmd_sound/core/modules.order := {   cat sound/core/oss/modules.order;   echo sound/core/snd.ko;   echo sound/core/snd-hwdep.ko;   echo sound/core/snd-timer.ko;   echo sound/core/snd-pcm.ko; :; } | awk '!x[$$0]++' - > sound/core/modules.order

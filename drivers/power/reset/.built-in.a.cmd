@@ -1,1 +1,0 @@
-cmd_drivers/power/reset/built-in.a := rm -f drivers/power/reset/built-in.a; ar cDPrST drivers/power/reset/built-in.a drivers/power/reset/gpio-poweroff.o drivers/power/reset/gpio-restart.o drivers/power/reset/ltc2952-poweroff.o drivers/power/reset/restart-poweroff.o drivers/power/reset/syscon-reboot.o drivers/power/reset/syscon-poweroff.o

@@ -1,1 +1,0 @@
-cmd_drivers/i2c/modules.order := {   cat drivers/i2c/algos/modules.order;   cat drivers/i2c/busses/modules.order;   cat drivers/i2c/muxes/modules.order;   echo drivers/i2c/i2c-smbus.ko;   echo drivers/i2c/i2c-mux.ko; :; } | awk '!x[$$0]++' - > drivers/i2c/modules.order

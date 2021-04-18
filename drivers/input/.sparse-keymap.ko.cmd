@@ -1,1 +1,0 @@
-cmd_drivers/input/sparse-keymap.ko := ld -r -m elf_x86_64 --build-id=sha1  -T scripts/module.lds -o drivers/input/sparse-keymap.ko drivers/input/sparse-keymap.o drivers/input/sparse-keymap.mod.o;  true

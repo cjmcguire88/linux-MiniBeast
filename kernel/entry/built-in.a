@@ -1,8 +1,0 @@
-!<thin>
-//                                              42        `
-common.o/
-syscall_user_dispatch.o/
-kvm.o/
-/0              0           0     0     644     25080     `
-/10             0           0     0     644     3984      `
-/35             0           0     0     644     3592      `
