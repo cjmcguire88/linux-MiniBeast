@@ -1,4 +1,4 @@
-# **linux-5.11-MiniBeast**
+# **linux-5.11.15-MiniBeast**
 ## *Kernel for MSI GF63 Thin 9SC laptop*
 ___
 
@@ -9,7 +9,7 @@ ___
 + PREEMPT (low latency desktop) [Kernel preemption](https://en.wikipedia.org/wiki/Kernel_preemption) 
 + RCU priority boosting enabled [RCU priority boosting](https://wiki.linuxfoundation.org/realtime/documentation/technical_details/rcu#rcu_priority_boosting)
 + lz4 compression (fastest tested on this laptop) [LZ4 compression](https://en.wikipedia.org/wiki/LZ4_(compression_algorithm))
-+ -O2 optimization level [Optimization levels](https://gcc.gnu.org/onlinedocs/gnat_ugn/Optimization-Levels.html)
++ -O3 optimization level [Optimization levels](https://gcc.gnu.org/onlinedocs/gnat_ugn/Optimization-Levels.html)
 + BBR tcp congestion algorithm [TCP congestion control](https://en.wikipedia.org/wiki/TCP_congestion_control)
 + Tailor made for MSI GF63 Thin 9SC and optimized for Intel
 
@@ -17,6 +17,7 @@ ___
 + Build optimized for Intel Skylake using graysky's gcc patch [Repo](https://github.com/graysky2/kernel_gcc_patch)
 + Muqss cpu scheduler by Con Kolivas (ck patchset) [Linux-ck](https://wiki.archlinux.org/index.php/linux-ck)
 + Clear Linux patches: [Repo](https://github.com/clearlinux-pkgs/linux)  
+
     *intel_idle-tweak-cpuidle-cstates*  
     tunes intel idle to be less aggressive  
     
@@ -27,9 +28,6 @@ ___
     
     *ipv4-tcp-allow-the-memory-tuning-for-tcp-to-go-a-lit*  
     allocate a little more memory to TCP  
-    
-    *do-accept-in-LIFO-order-for-cache-efficiency*  
-    accept last in first out (stack) for cache efficiency  
     
     *smpboot-reuse-timer-calibration*  
     no point recalibrating for known-constant tsc. saves 200ms+ of boot time  
