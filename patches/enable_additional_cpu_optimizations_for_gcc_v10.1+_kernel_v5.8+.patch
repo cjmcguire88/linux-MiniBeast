@@ -1,11 +1,11 @@
-From 7b48b6f431e7eb802473283569476c62a5af74ca Mon Sep 21 00:00:00 2001
+From 4666424a864159b4de572c90adb2c3e1fcdd5890 Mon Sep 17 00:00:00 2001
 From: graysky <graysky@archlinux.us>
-Date: Mon, 21 Dec 2020 06:51:36 -0500
+Date: Fri, 13 Nov 2020 15:45:08 -0500
 Subject: [PATCH] 
- enable_additional_cpu_optimizations_for_gcc_v11.0+_kernel_v5.8+.patch
+ enable_additional_cpu_optimizations_for_gcc_v10.1+_kernel_v5.8+.patch
 
 WARNING
-This patch works with gcc versions 11.0+ and with kernel version 5.8+ and should
+This patch works with gcc versions 10.1+ and with kernel version 5.8+ and should
 NOT be applied when compiling on older versions of gcc due to key name changes
 of the march flags introduced with the version 4.9 release of gcc.[1]
 
@@ -29,7 +29,6 @@ The expanded microarchitectures include:
 * AMD Family 15h (Excavator)
 * AMD Family 17h (Zen)
 * AMD Family 17h (Zen 2)
-* AMD Family 17h (Zen 3)
 * Intel Silvermont low-power processors
 * Intel Goldmont low-power processors (Apollo Lake and Denverton)
 * Intel Goldmont Plus low-power processors (Gemini Lake)
@@ -74,7 +73,7 @@ https://github.com/graysky2/kernel_gcc_patch
 
 REQUIREMENTS
 linux version >=5.8
-gcc version >=11.0
+gcc version >=10.1
 
 ACKNOWLEDGMENTS
 This patch builds on the seminal work by Jeroen.[6]
@@ -88,14 +87,14 @@ REFERENCES
 5.  https://github.com/graysky2/kernel_gcc_patch/issues/15
 6.  http://www.linuxforge.net/docs/linux/linux-gcc.php
 ---
- arch/x86/Kconfig.cpu            | 308 ++++++++++++++++++++++++++++----
- arch/x86/Makefile               |  54 +++++-
- arch/x86/Makefile_32.cpu        |  33 +++-
- arch/x86/include/asm/vermagic.h |  58 ++++++
- 4 files changed, 418 insertions(+), 35 deletions(-)
+ arch/x86/Kconfig.cpu            | 301 ++++++++++++++++++++++++++++----
+ arch/x86/Makefile               |  53 +++++-
+ arch/x86/Makefile_32.cpu        |  32 +++-
+ arch/x86/include/asm/vermagic.h |  56 ++++++
+ 4 files changed, 407 insertions(+), 35 deletions(-)
 
 diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
-index 814fe0d..2c141cd 100644
+index 814fe0d349b0..7b08e87fe797 100644
 --- a/arch/x86/Kconfig.cpu
 +++ b/arch/x86/Kconfig.cpu
 @@ -123,6 +123,7 @@ config MPENTIUMM
@@ -109,7 +108,7 @@ index 814fe0d..2c141cd 100644
 @@ -155,9 +156,8 @@ config MPENTIUM4
  		-Paxville
  		-Dempsey
-
+ 
 -
  config MK6
 -	bool "K6/K6-II/K6-III"
@@ -119,16 +118,16 @@ index 814fe0d..2c141cd 100644
  	  Select this for an AMD K6-family processor.  Enables use of
 @@ -165,7 +165,7 @@ config MK6
  	  flags to GCC.
-
+ 
  config MK7
 -	bool "Athlon/Duron/K7"
 +	bool "AMD Athlon/Duron/K7"
  	depends on X86_32
  	help
  	  Select this for an AMD Athlon K7-family processor.  Enables use of
-@@ -173,12 +173,97 @@ config MK7
+@@ -173,12 +173,90 @@ config MK7
  	  flags to GCC.
-
+ 
  config MK8
 -	bool "Opteron/Athlon64/Hammer/K8"
 +	bool "AMD Opteron/Athlon64/Hammer/K8"
@@ -136,7 +135,7 @@ index 814fe0d..2c141cd 100644
  	  Select this for an AMD Opteron or Athlon64 Hammer-family processor.
  	  Enables use of some extended instructions, and passes appropriate
  	  optimization flags to GCC.
-
+ 
 +config MK8SSE3
 +	bool "AMD Opteron/Athlon64/Hammer/K8 with SSE3"
 +	help
@@ -215,28 +214,21 @@ index 814fe0d..2c141cd 100644
 +
 +	  Enables -march=znver2
 +
-+config MZEN3
-+	bool "AMD Zen 3"
-+	help
-+	  Select this for AMD Family 19h Zen 3 processors.
-+
-+	  Enables -march=znver3
-+
  config MCRUSOE
  	bool "Crusoe"
  	depends on X86_32
-@@ -260,6 +345,7 @@ config MVIAC7
-
+@@ -260,6 +338,7 @@ config MVIAC7
+ 
  config MPSC
  	bool "Intel P4 / older Netburst based Xeon"
 +	select X86_P6_NOP
  	depends on X86_64
  	help
  	  Optimize for Intel Pentium 4, Pentium D and older Nocona/Dempsey
-@@ -269,8 +355,19 @@ config MPSC
+@@ -269,8 +348,19 @@ config MPSC
  	  using the cpu family field
  	  in /proc/cpuinfo. Family 15 is an older Xeon, Family 6 a newer one.
-
+ 
 +config MATOM
 +	bool "Intel Atom"
 +	select X86_P6_NOP
@@ -252,12 +244,12 @@ index 814fe0d..2c141cd 100644
 +	bool "Intel Core 2"
 +	select X86_P6_NOP
  	help
-
+ 
  	  Select this for Intel Core 2 and newer Core 2 Xeons (Xeon 51xx and
-@@ -278,14 +375,151 @@ config MCORE2
+@@ -278,14 +368,151 @@ config MCORE2
  	  family in /proc/cpuinfo. Newer ones have 6 and older ones 15
  	  (not a typo)
-
+ 
 -config MATOM
 -	bool "Intel Atom"
 +	  Enables -march=core2
@@ -266,7 +258,7 @@ index 814fe0d..2c141cd 100644
 +	bool "Intel Nehalem"
 +	select X86_P6_NOP
  	help
-
+ 
 -	  Select this for the Intel Atom platform. Intel Atom CPUs have an
 -	  in-order pipelining architecture and thus can benefit from
 -	  accordingly optimized code. Use a recent GCC with specific Atom
@@ -409,13 +401,13 @@ index 814fe0d..2c141cd 100644
 +	  Select this for third-generation 10 nm process processors in the Tiger Lake family.
 +
 +	  Enables -march=tigerlake
-
+ 
  config GENERIC_CPU
  	bool "Generic-x86-64"
-@@ -294,6 +528,19 @@ config GENERIC_CPU
+@@ -294,6 +521,19 @@ config GENERIC_CPU
  	  Generic x86-64 CPU.
  	  Run equally well on all x86-64 CPUs.
-
+ 
 +config MNATIVE
 + bool "Native optimizations autodetected by GCC"
 + help
@@ -430,33 +422,33 @@ index 814fe0d..2c141cd 100644
 +   Enables -march=native
 +
  endchoice
-
+ 
  config X86_GENERIC
-@@ -318,7 +565,7 @@ config X86_INTERNODE_CACHE_SHIFT
+@@ -318,7 +558,7 @@ config X86_INTERNODE_CACHE_SHIFT
  config X86_L1_CACHE_SHIFT
  	int
  	default "7" if MPENTIUM4 || MPSC
 -	default "6" if MK7 || MK8 || MPENTIUMM || MCORE2 || MATOM || MVIAC7 || X86_GENERIC || GENERIC_CPU
-+	default "6" if MK7 || MK8 || MK8SSE3 || MK10 || MBARCELONA || MBOBCAT || MBULLDOZER || MPILEDRIVER || MSTEAMROLLER || MEXCAVATOR || MZEN || MZEN2 || MZEN3 || MJAGUAR || MPENTIUMM || MCORE2 || MNEHALEM || MWESTMERE || MSILVERMONT || MGOLDMONT || MGOLDMONTPLUS || MSANDYBRIDGE || MIVYBRIDGE || MHASWELL || MBROADWELL || MSKYLAKE || MSKYLAKEX || MCANNONLAKE || MICELAKE || MCASCADELAKE || MCOOPERLAKE || MTIGERLAKE || MNATIVE || MATOM || MVIAC7 || X86_GENERIC || GENERIC_CPU
++	default "6" if MK7 || MK8 || MK8SSE3 || MK10 || MBARCELONA || MBOBCAT || MBULLDOZER || MPILEDRIVER || MSTEAMROLLER || MEXCAVATOR || MZEN || MZEN2 || MJAGUAR || MPENTIUMM || MCORE2 || MNEHALEM || MWESTMERE || MSILVERMONT || MGOLDMONT || MGOLDMONTPLUS || MSANDYBRIDGE || MIVYBRIDGE || MHASWELL || MBROADWELL || MSKYLAKE || MSKYLAKEX || MCANNONLAKE || MICELAKE || MCASCADELAKE || MCOOPERLAKE || MTIGERLAKE || MNATIVE || MATOM || MVIAC7 || X86_GENERIC || GENERIC_CPU
  	default "4" if MELAN || M486SX || M486 || MGEODEGX1
  	default "5" if MWINCHIP3D || MWINCHIPC6 || MCRUSOE || MEFFICEON || MCYRIXIII || MK6 || MPENTIUMIII || MPENTIUMII || M686 || M586MMX || M586TSC || M586 || MVIAC3_2 || MGEODE_LX
-
-@@ -336,35 +583,36 @@ config X86_ALIGNMENT_16
-
+ 
+@@ -336,35 +576,36 @@ config X86_ALIGNMENT_16
+ 
  config X86_INTEL_USERCOPY
  	def_bool y
 -	depends on MPENTIUM4 || MPENTIUMM || MPENTIUMIII || MPENTIUMII || M586MMX || X86_GENERIC || MK8 || MK7 || MEFFICEON || MCORE2
 +	depends on MPENTIUM4 || MPENTIUMM || MPENTIUMIII || MPENTIUMII || M586MMX || X86_GENERIC || MK8 || MK8SSE3 || MK7 || MEFFICEON || MCORE2 || MK10 || MBARCELONA || MNEHALEM || MWESTMERE || MSILVERMONT || MGOLDMONT || MGOLDMONTPLUS || MSANDYBRIDGE || MIVYBRIDGE || MHASWELL || MBROADWELL || MSKYLAKE || MSKYLAKEX || MCANNONLAKE || MICELAKE || MCASCADELAKE || MCOOPERLAKE || MTIGERLAKE || MNATIVE
-
+ 
  config X86_USE_PPRO_CHECKSUM
  	def_bool y
 -	depends on MWINCHIP3D || MWINCHIPC6 || MCYRIXIII || MK7 || MK6 || MPENTIUM4 || MPENTIUMM || MPENTIUMIII || MPENTIUMII || M686 || MK8 || MVIAC3_2 || MVIAC7 || MEFFICEON || MGEODE_LX || MCORE2 || MATOM
 +	depends on MWINCHIP3D || MWINCHIPC6 || MCYRIXIII || MK7 || MK6 || MK10 || MPENTIUM4 || MPENTIUMM || MPENTIUMIII || MPENTIUMII || M686 || MK8 || MK8SSE3 || MVIAC3_2 || MVIAC7 || MEFFICEON || MGEODE_LX || MCORE2 || MNEHALEM || MWESTMERE || MSILVERMONT || MGOLDMONT || MGOLDMONTPLUS || MSANDYBRIDGE || MIVYBRIDGE || MHASWELL || MBROADWELL || MSKYLAKE || MSKYLAKEX || MCANNONLAKE || MICELAKE || MCASCADELAKE || MCOOPERLAKE || MTIGERLAKE || MATOM || MNATIVE
-
+ 
  config X86_USE_3DNOW
  	def_bool y
  	depends on (MCYRIXIII || MK7 || MGEODE_LX) && !UML
-
+ 
 -#
 -# P6_NOPs are a relatively minor optimization that require a family >=
 -# 6 processor, except that it is broken on certain VIA chips.
@@ -487,30 +479,30 @@ index 814fe0d..2c141cd 100644
 +	the right-hand clause are the cores that benefit from this optimization.
 +
 +	Say Y if you have Intel CPU newer than Pentium Pro, N otherwise.
-
+ 
  config X86_TSC
  	def_bool y
 -	depends on (MWINCHIP3D || MCRUSOE || MEFFICEON || MCYRIXIII || MK7 || MK6 || MPENTIUM4 || MPENTIUMM || MPENTIUMIII || MPENTIUMII || M686 || M586MMX || M586TSC || MK8 || MVIAC3_2 || MVIAC7 || MGEODEGX1 || MGEODE_LX || MCORE2 || MATOM) || X86_64
 +	depends on (MWINCHIP3D || MCRUSOE || MEFFICEON || MCYRIXIII || MK7 || MK6 || MPENTIUM4 || MPENTIUMM || MPENTIUMIII || MPENTIUMII || M686 || M586MMX || M586TSC || MK8 || MK8SSE3 || MVIAC3_2 || MVIAC7 || MGEODEGX1 || MGEODE_LX || MCORE2 || MNEHALEM || MWESTMERE || MSILVERMONT || MGOLDMONT || MGOLDMONTPLUS || MSANDYBRIDGE || MIVYBRIDGE || MHASWELL || MBROADWELL || MSKYLAKE || MSKYLAKEX || MCANNONLAKE || MICELAKE || MCASCADELAKE || MCOOPERLAKE || MTIGERLAKE || MNATIVE || MATOM) || X86_64
-
+ 
  config X86_CMPXCHG64
  	def_bool y
-@@ -374,7 +622,7 @@ config X86_CMPXCHG64
+@@ -374,7 +615,7 @@ config X86_CMPXCHG64
  # generates cmov.
  config X86_CMOV
  	def_bool y
 -	depends on (MK8 || MK7 || MCORE2 || MPENTIUM4 || MPENTIUMM || MPENTIUMIII || MPENTIUMII || M686 || MVIAC3_2 || MVIAC7 || MCRUSOE || MEFFICEON || X86_64 || MATOM || MGEODE_LX)
-+	depends on (MK8 || MK8SSE3 || MK10 || MBARCELONA || MBOBCAT || MBULLDOZER || MPILEDRIVER || MSTEAMROLLER || MEXCAVATOR || MZEN || MZEN2 || MZEN3 || MJAGUAR || MK7 || MCORE2 || MNEHALEM || MWESTMERE || MSILVERMONT || MGOLDMONT || MGOLDMONTPLUS || MSANDYBRIDGE || MIVYBRIDGE || MHASWELL || MBROADWELL || MSKYLAKE || MSKYLAKEX || MCANNONLAKE || MICELAKE || MCASCADELAKE || MCOOPERLAKE || MTIGERLAKE || MPENTIUM4 || MPENTIUMM || MPENTIUMIII || MPENTIUMII || M686 || MVIAC3_2 || MVIAC7 || MCRUSOE || MEFFICEON || X86_64 || MNATIVE || MATOM || MGEODE_LX)
-
++	depends on (MK8 || MK8SSE3 || MK10 || MBARCELONA || MBOBCAT || MBULLDOZER || MPILEDRIVER || MSTEAMROLLER || MEXCAVATOR || MZEN || MZEN2 || MJAGUAR || MK7 || MCORE2 || MNEHALEM || MWESTMERE || MSILVERMONT || MGOLDMONT || MGOLDMONTPLUS || MSANDYBRIDGE || MIVYBRIDGE || MHASWELL || MBROADWELL || MSKYLAKE || MSKYLAKEX || MCANNONLAKE || MICELAKE || MCASCADELAKE || MCOOPERLAKE || MTIGERLAKE || MPENTIUM4 || MPENTIUMM || MPENTIUMIII || MPENTIUMII || M686 || MVIAC3_2 || MVIAC7 || MCRUSOE || MEFFICEON || X86_64 || MNATIVE || MATOM || MGEODE_LX)
+ 
  config X86_MINIMUM_CPU_FAMILY
  	int
 diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index 1bf2174..c442e44 100644
+index 154259f18b8b..405b1f2b3c65 100644
 --- a/arch/x86/Makefile
 +++ b/arch/x86/Makefile
-@@ -115,13 +115,61 @@ else
+@@ -115,13 +115,60 @@ else
  	KBUILD_CFLAGS += $(call cc-option,-mskip-rax-setup)
-
+ 
          # FIXME - should be integrated in Makefile.cpu (Makefile_32.cpu)
 +        cflags-$(CONFIG_MNATIVE) += $(call cc-option,-march=native)
          cflags-$(CONFIG_MK8) += $(call cc-option,-march=k8)
@@ -528,9 +520,8 @@ index 1bf2174..c442e44 100644
 +        cflags-$(CONFIG_MEXCAVATOR) += $(call cc-option,-mno-tbm)
 +        cflags-$(CONFIG_MZEN) += $(call cc-option,-march=znver1)
 +        cflags-$(CONFIG_MZEN2) += $(call cc-option,-march=znver2)
-+        cflags-$(CONFIG_MZEN3) += $(call cc-option,-march=znver3)
          cflags-$(CONFIG_MPSC) += $(call cc-option,-march=nocona)
-
+ 
          cflags-$(CONFIG_MCORE2) += \
 -                $(call cc-option,-march=core2,$(call cc-option,-mtune=generic))
 -	cflags-$(CONFIG_MATOM) += $(call cc-option,-march=atom) \
@@ -572,12 +563,12 @@ index 1bf2174..c442e44 100644
 +                $(call cc-option,-mtune=bonnell,$(call cc-option,-mtune=generic))
          cflags-$(CONFIG_GENERIC_CPU) += $(call cc-option,-mtune=generic)
          KBUILD_CFLAGS += $(cflags-y)
-
+ 
 diff --git a/arch/x86/Makefile_32.cpu b/arch/x86/Makefile_32.cpu
-index cd30567..bec097b 100644
+index cd3056759880..cb0a4c6bd987 100644
 --- a/arch/x86/Makefile_32.cpu
 +++ b/arch/x86/Makefile_32.cpu
-@@ -24,7 +24,20 @@ cflags-$(CONFIG_MK6)		+= -march=k6
+@@ -24,7 +24,19 @@ cflags-$(CONFIG_MK6)		+= -march=k6
  # Please note, that patches that add -march=athlon-xp and friends are pointless.
  # They make zero difference whatsosever to performance at this time.
  cflags-$(CONFIG_MK7)		+= -march=athlon
@@ -594,11 +585,10 @@ index cd30567..bec097b 100644
 +cflags-$(CONFIG_MEXCAVATOR)	+= $(call cc-option,-march=bdver4,-march=athlon)
 +cflags-$(CONFIG_MZEN)	+= $(call cc-option,-march=znver1,-march=athlon)
 +cflags-$(CONFIG_MZEN2)	+= $(call cc-option,-march=znver2,-march=athlon)
-+cflags-$(CONFIG_MZEN3)	+= $(call cc-option,-march=znver3,-march=athlon)
  cflags-$(CONFIG_MCRUSOE)	+= -march=i686 -falign-functions=0 -falign-jumps=0 -falign-loops=0
  cflags-$(CONFIG_MEFFICEON)	+= -march=i686 $(call tune,pentium3) -falign-functions=0 -falign-jumps=0 -falign-loops=0
  cflags-$(CONFIG_MWINCHIPC6)	+= $(call cc-option,-march=winchip-c6,-march=i586)
-@@ -33,8 +46,24 @@ cflags-$(CONFIG_MCYRIXIII)	+= $(call cc-option,-march=c3,-march=i486) -falign-fu
+@@ -33,8 +45,24 @@ cflags-$(CONFIG_MCYRIXIII)	+= $(call cc-option,-march=c3,-march=i486) -falign-fu
  cflags-$(CONFIG_MVIAC3_2)	+= $(call cc-option,-march=c3-2,-march=i686)
  cflags-$(CONFIG_MVIAC7)		+= -march=i686
  cflags-$(CONFIG_MCORE2)		+= -march=i686 $(call tune,core2)
@@ -622,11 +612,11 @@ index cd30567..bec097b 100644
 +cflags-$(CONFIG_MTIGERLAKE)	+= -march=i686 $(call tune,tigerlake)
 +cflags-$(CONFIG_MATOM)		+= $(call cc-option,-march=bonnell,$(call cc-option,-march=core2,-march=i686)) \
 +	$(call cc-option,-mtune=bonnell,$(call cc-option,-mtune=generic))
-
+ 
  # AMD Elan support
  cflags-$(CONFIG_MELAN)		+= -march=i486
 diff --git a/arch/x86/include/asm/vermagic.h b/arch/x86/include/asm/vermagic.h
-index 75884d2..40d910a 100644
+index 75884d2cdec3..14c222e78213 100644
 --- a/arch/x86/include/asm/vermagic.h
 +++ b/arch/x86/include/asm/vermagic.h
 @@ -17,6 +17,40 @@
@@ -670,7 +660,7 @@ index 75884d2..40d910a 100644
  #elif defined CONFIG_MATOM
  #define MODULE_PROC_FAMILY "ATOM "
  #elif defined CONFIG_M686
-@@ -35,6 +69,30 @@
+@@ -35,6 +69,28 @@
  #define MODULE_PROC_FAMILY "K7 "
  #elif defined CONFIG_MK8
  #define MODULE_PROC_FAMILY "K8 "
@@ -696,10 +686,9 @@ index 75884d2..40d910a 100644
 +#define MODULE_PROC_FAMILY "ZEN "
 +#elif defined CONFIG_MZEN2
 +#define MODULE_PROC_FAMILY "ZEN2 "
-+#elif defined CONFIG_MZEN3
-+#define MODULE_PROC_FAMILY "ZEN3 "
  #elif defined CONFIG_MELAN
  #define MODULE_PROC_FAMILY "ELAN "
  #elif defined CONFIG_MCRUSOE
---
+-- 
 2.29.2
+
