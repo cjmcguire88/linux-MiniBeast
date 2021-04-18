@@ -11,6 +11,11 @@ deps_config := \
 	lib/Kconfig.ubsan \
 	lib/Kconfig.kgdb \
 	lib/Kconfig.debug \
+	lib/fonts/Kconfig \
+	lib/vdso/Kconfig \
+	kernel/dma/Kconfig \
+	lib/xz/Kconfig \
+	lib/math/Kconfig \
 	lib/Kconfig \
 	certs/Kconfig \
 	crypto/asymmetric_keys/Kconfig \
@@ -402,11 +407,6 @@ deps_config := \
 	drivers/virt/vboxguest/Kconfig \
 	drivers/virt/Kconfig \
 	drivers/vlynq/Kconfig \
-	lib/fonts/Kconfig \
-	lib/vdso/Kconfig \
-	kernel/dma/Kconfig \
-	lib/xz/Kconfig \
-	lib/math/Kconfig \
 	virt/lib/Kconfig \
 	drivers/vfio/fsl-mc/Kconfig \
 	drivers/vfio/mdev/Kconfig \
@@ -1357,7 +1357,7 @@ include/config/auto.conf: \
 ifneq "$(ARCH)" "x86"
 include/config/auto.conf: FORCE
 endif
-ifneq "$(KERNELVERSION)" "5.11.15-MiniBeast"
+ifneq "$(KERNELVERSION)" "5.11.15-ck1"
 include/config/auto.conf: FORCE
 endif
 ifneq "$(CC)" "gcc"
