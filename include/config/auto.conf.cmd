@@ -1357,7 +1357,7 @@ include/config/auto.conf: \
 ifneq "$(ARCH)" "x86"
 include/config/auto.conf: FORCE
 endif
-ifneq "$(KERNELVERSION)" "5.11.15-ck1"
+ifneq "$(KERNELVERSION)" "5.11.16-ck1"
 include/config/auto.conf: FORCE
 endif
 ifneq "$(CC)" "gcc"

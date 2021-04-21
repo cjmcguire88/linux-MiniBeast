@@ -1,7 +1,7 @@
 /*
  *
  * Automatically generated file; DO NOT EDIT.
- * Linux/x86 5.11.15-ck1 Kernel Configuration
+ * Linux/x86 5.11.16-ck1 Kernel Configuration
  *
  */
 #define CONFIG_RING_BUFFER 1

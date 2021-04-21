@@ -1,4 +1,4 @@
-# **linux-5.11.15-MiniBeast**
+# **linux-5.11.16-MiniBeast**
 ## *Kernel for MSI GF63 Thin 9SC laptop*
 ___
 
