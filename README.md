@@ -28,9 +28,10 @@ ___
     0109-initialize-ata-before-graphics.patch  
     0110-give-rdrand-some-credit.patch  
     0111-ipv4-tcp-allow-the-memory-tuning-for-tcp-to-go-a-lit.patch  
-    0116-enable-stateless-firmware-loading  
-    0117-migrate-some-systemd-defaults-to-the-kernel-defaults  
-    0120-use-lfence-instead-of-rep-and-nop  
+    0116-enable-stateless-firmware-loading.patch  
+    0117-migrate-some-systemd-defaults-to-the-kernel-defaults.patch  
+    0119-add-scheduler-turbo3.patch  
+    0120-use-lfence-instead-of-rep-and-nop.patch  
     0125-x86-microcode-Force-update-a-uCode-even-if-the-rev-i.patch  
     0126-x86-microcode-echo-2-reload-to-force-load-ucode.patch  
     0127-fix-bug-in-ucode-force-reload-revision-check.patch
