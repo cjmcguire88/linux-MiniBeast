@@ -82,7 +82,7 @@
 #define BOND_STATE_ACTIVE       0   /* link is active */
 #define BOND_STATE_BACKUP       1   /* link is backup */
 
-#define BOND_DEFAULT_MAX_BONDS  1   /* Default maximum number of devices to support */
+#define BOND_DEFAULT_MAX_BONDS  0   /* Default maximum number of devices to support */
 
 #define BOND_DEFAULT_TX_QUEUES 16   /* Default number of tx queues per device */
 
@@ -94,6 +94,7 @@
 #define BOND_XMIT_POLICY_LAYER23	2 /* layer 2+3 (IP ^ MAC) */
 #define BOND_XMIT_POLICY_ENCAP23	3 /* encapsulated layer 2+3 */
 #define BOND_XMIT_POLICY_ENCAP34	4 /* encapsulated layer 3+4 */
+#define BOND_XMIT_POLICY_VLAN_SRCMAC	5 /* vlan + source MAC */
 
 /* 802.3ad port state definitions (43.4.2.2 in the 802.3ad standard) */
 #define LACP_STATE_LACP_ACTIVITY   0x1
