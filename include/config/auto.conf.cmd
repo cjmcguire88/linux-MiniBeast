@@ -1360,7 +1360,7 @@ include/config/auto.conf: \
 ifneq "$(ARCH)" "x86"
 include/config/auto.conf: FORCE
 endif
-ifneq "$(KERNELVERSION)" "5.12.0-MiniBeast"
+ifneq "$(KERNELVERSION)" "5.12.1-MiniBeast"
 include/config/auto.conf: FORCE
 endif
 ifneq "$(CC)" "gcc"

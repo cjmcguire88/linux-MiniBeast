@@ -1,7 +1,7 @@
 /*
  *
  * Automatically generated file; DO NOT EDIT.
- * Linux/x86 5.12.0-MiniBeast Kernel Configuration
+ * Linux/x86 5.12.1-MiniBeast Kernel Configuration
  *
  */
 #define CONFIG_RING_BUFFER 1
