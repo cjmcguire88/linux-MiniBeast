@@ -259,7 +259,7 @@ config MZEN2
 
 config MZEN3
 	bool "AMD Zen 3"
-	depends on GCC_VERSION > 100300
+	depends on ( CC_IS_GCC && GCC_VERSION >= 100300 ) || ( CC_IS_CLANG && CLANG_VERSION >= 120000 )
 	help
 	  Select this for AMD Family 19h Zen 3 processors.
 
@@ -503,7 +503,7 @@ config MCASCADELAKE
 
 config MCOOPERLAKE
 	bool "Intel Cooper Lake"
-	depends on GCC_VERSION > 100100
+	depends on ( CC_IS_GCC && GCC_VERSION > 100100 ) || ( CC_IS_CLANG && CLANG_VERSION >= 100000 )
 	select X86_P6_NOP
 	help
 
@@ -513,7 +513,7 @@ config MCOOPERLAKE
 
 config MTIGERLAKE
 	bool "Intel Tiger Lake"
-	depends on GCC_VERSION > 100100
+	depends on  ( CC_IS_GCC && GCC_VERSION > 100100 ) || ( CC_IS_CLANG && CLANG_VERSION >= 100000 )
 	select X86_P6_NOP
 	help
 
@@ -523,7 +523,7 @@ config MTIGERLAKE
 
 config MSAPPHIRERAPIDS
 	bool "Intel Sapphire Rapids"
-	depends on GCC_VERSION > 110000
+	depends on ( CC_IS_GCC && GCC_VERSION > 110000 ) || ( CC_IS_CLANG && CLANG_VERSION >= 120000 )
 	select X86_P6_NOP
 	help
 
@@ -533,7 +533,7 @@ config MSAPPHIRERAPIDS
 
 config MROCKETLAKE
 	bool "Intel Rocket Lake"
-	depends on GCC_VERSION > 110000
+	depends on ( CC_IS_GCC && GCC_VERSION > 110000 ) || ( CC_IS_CLANG && CLANG_VERSION >= 120000 )
 	select X86_P6_NOP
 	help
 
@@ -543,7 +543,7 @@ config MROCKETLAKE
 
 config MALDERLAKE
 	bool "Intel Alder Lake"
-	depends on GCC_VERSION > 110000
+	depends on ( CC_IS_GCC && GCC_VERSION > 110000 ) || ( CC_IS_CLANG && CLANG_VERSION >= 120000 )
 	select X86_P6_NOP
 	help
 
@@ -560,7 +560,7 @@ config GENERIC_CPU
 
 config GENERIC_CPU2
 	bool "Generic-x86-64-v2"
-	depends on GCC_VERSION > 110000
+	depends on ( CC_IS_GCC && GCC_VERSION > 110000 ) || ( CC_IS_CLANG && LANG_VERSION >= 120000 )
 	depends on X86_64
 	help
 	  Generic x86-64 CPU.
@@ -568,7 +568,7 @@ config GENERIC_CPU2
 
 config GENERIC_CPU3
 	bool "Generic-x86-64-v3"
-	depends on GCC_VERSION > 110000
+	depends on ( CC_IS_GCC && GCC_VERSION > 110000 ) || ( CC_IS_CLANG && LANG_VERSION >= 120000 )
 	depends on X86_64
 	help
 	  Generic x86-64-v3 CPU with v3 instructions.
@@ -576,27 +576,27 @@ config GENERIC_CPU3
 
 config GENERIC_CPU4
 	bool "Generic-x86-64-v4"
-	depends on GCC_VERSION > 110000
+	depends on ( CC_IS_GCC && GCC_VERSION > 110000 ) || ( CC_IS_CLANG && LANG_VERSION >= 120000 )
 	depends on X86_64
 	help
 	  Generic x86-64 CPU with v4 instructions.
 	  Run equally well on all x86-64 CPUs with min support of x86-64-v4.
 
 config MNATIVE_INTEL
-	bool "Intel-Native optimizations autodetected by GCC"
+	bool "Intel-Native optimizations autodetected by the compiler"
 	help
 
-	  GCC 4.2 and above support -march=native, which automatically detects
+	  Clang 3.8, GCC 4.2 and above support -march=native, which automatically detects
 	  the optimum settings to use based on your processor. Do NOT use this
 	  for AMD CPUs.  Intel Only!
 
 	  Enables -march=native
 
 config MNATIVE_AMD
-	bool "AMD-Native optimizations autodetected by GCC"
+	bool "AMD-Native optimizations autodetected by the compiler"
 	help
 
-	  GCC 4.2 and above support -march=native, which automatically detects
+	  Clang 3.8, GCC 4.2 and above support -march=native, which automatically detects
 	  the optimum settings to use based on your processor. Do NOT use this
 	  for Intel CPUs.  AMD Only!
 

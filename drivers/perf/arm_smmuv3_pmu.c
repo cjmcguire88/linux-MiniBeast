@@ -277,7 +277,7 @@ static int smmu_pmu_apply_event_filter(struct smmu_pmu *smmu_pmu,
 				       struct perf_event *event, int idx)
 {
 	u32 span, sid;
-	unsigned int num_ctrs = smmu_pmu->num_counters;
+	unsigned int cur_idx, num_ctrs = smmu_pmu->num_counters;
 	bool filter_en = !!get_filter_enable(event);
 
 	span = filter_en ? get_filter_span(event) :
@@ -285,17 +285,19 @@ static int smmu_pmu_apply_event_filter(struct smmu_pmu *smmu_pmu,
 	sid = filter_en ? get_filter_stream_id(event) :
 			   SMMU_PMCG_DEFAULT_FILTER_SID;
 
-	/* Support individual filter settings */
-	if (!smmu_pmu->global_filter) {
+	cur_idx = find_first_bit(smmu_pmu->used_counters, num_ctrs);
+	/*
+	 * Per-counter filtering, or scheduling the first globally-filtered
+	 * event into an empty PMU so idx == 0 and it works out equivalent.
+	 */
+	if (!smmu_pmu->global_filter || cur_idx == num_ctrs) {
 		smmu_pmu_set_event_filter(event, idx, span, sid);
 		return 0;
 	}
 
-	/* Requested settings same as current global settings*/
-	idx = find_first_bit(smmu_pmu->used_counters, num_ctrs);
-	if (idx == num_ctrs ||
-	    smmu_pmu_check_global_filter(smmu_pmu->events[idx], event)) {
-		smmu_pmu_set_event_filter(event, 0, span, sid);
+	/* Otherwise, must match whatever's currently scheduled */
+	if (smmu_pmu_check_global_filter(smmu_pmu->events[cur_idx], event)) {
+		smmu_pmu_set_evtyper(smmu_pmu, idx, get_event(event));
 		return 0;
 	}
 
@@ -506,30 +508,24 @@ static ssize_t smmu_pmu_event_show(struct device *dev,
 
 	pmu_attr = container_of(attr, struct perf_pmu_events_attr, attr);
 
-	return sprintf(page, "event=0x%02llx\n", pmu_attr->id);
+	return sysfs_emit(page, "event=0x%02llx\n", pmu_attr->id);
 }
 
-#define SMMU_EVENT_ATTR(name, config) \
-	PMU_EVENT_ATTR(name, smmu_event_attr_##name, \
-		       config, smmu_pmu_event_show)
-SMMU_EVENT_ATTR(cycles, 0);
-SMMU_EVENT_ATTR(transaction, 1);
-SMMU_EVENT_ATTR(tlb_miss, 2);
-SMMU_EVENT_ATTR(config_cache_miss, 3);
-SMMU_EVENT_ATTR(trans_table_walk_access, 4);
-SMMU_EVENT_ATTR(config_struct_access, 5);
-SMMU_EVENT_ATTR(pcie_ats_trans_rq, 6);
-SMMU_EVENT_ATTR(pcie_ats_trans_passed, 7);
+#define SMMU_EVENT_ATTR(name, config)					\
+	(&((struct perf_pmu_events_attr) {				\
+		.attr = __ATTR(name, 0444, smmu_pmu_event_show, NULL),	\
+		.id = config,						\
+	}).attr.attr)
 
 static struct attribute *smmu_pmu_events[] = {
-	&smmu_event_attr_cycles.attr.attr,
-	&smmu_event_attr_transaction.attr.attr,
-	&smmu_event_attr_tlb_miss.attr.attr,
-	&smmu_event_attr_config_cache_miss.attr.attr,
-	&smmu_event_attr_trans_table_walk_access.attr.attr,
-	&smmu_event_attr_config_struct_access.attr.attr,
-	&smmu_event_attr_pcie_ats_trans_rq.attr.attr,
-	&smmu_event_attr_pcie_ats_trans_passed.attr.attr,
+	SMMU_EVENT_ATTR(cycles, 0),
+	SMMU_EVENT_ATTR(transaction, 1),
+	SMMU_EVENT_ATTR(tlb_miss, 2),
+	SMMU_EVENT_ATTR(config_cache_miss, 3),
+	SMMU_EVENT_ATTR(trans_table_walk_access, 4),
+	SMMU_EVENT_ATTR(config_struct_access, 5),
+	SMMU_EVENT_ATTR(pcie_ats_trans_rq, 6),
+	SMMU_EVENT_ATTR(pcie_ats_trans_passed, 7),
 	NULL
 };
 
@@ -560,7 +556,7 @@ static ssize_t smmu_pmu_identifier_attr_show(struct device *dev,
 {
 	struct smmu_pmu *smmu_pmu = to_smmu_pmu(dev_get_drvdata(dev));
 
-	return snprintf(page, PAGE_SIZE, "0x%08x\n", smmu_pmu->iidr);
+	return sysfs_emit(page, "0x%08x\n", smmu_pmu->iidr);
 }
 
 static umode_t smmu_pmu_identifier_attr_visible(struct kobject *kobj,

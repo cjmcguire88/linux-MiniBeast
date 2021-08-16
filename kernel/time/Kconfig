@@ -77,9 +77,6 @@ config NO_HZ_COMMON
 	bool
 	select TICK_ONESHOT
 
-config NO_HZ_FULL
-	bool
-
 choice
 	prompt "Timer tick handling"
 	default NO_HZ_IDLE if NO_HZ
@@ -100,9 +97,8 @@ config NO_HZ_IDLE
 
 	  Most of the time you want to say Y here.
 
-config NO_HZ_FULL_NODEF
+config NO_HZ_FULL
 	bool "Full dynticks system (tickless)"
-	select NO_HZ_FULL
 	# NO_HZ_COMMON dependency
 	# We need at least one periodic CPU for timekeeping
 	depends on SMP
@@ -127,8 +123,6 @@ config NO_HZ_FULL_NODEF
 	 transitions: syscalls, exceptions and interrupts. Even when it's
 	 dynamically off.
 
-	 Not recommended for desktops,laptops, or mobile devices.
-
 	 Say N.
 
 endchoice
@@ -138,7 +132,7 @@ config CONTEXT_TRACKING
 
 config CONTEXT_TRACKING_FORCE
 	bool "Force context tracking"
-	depends on CONTEXT_TRACKING && !SCHED_MUQSS
+	depends on CONTEXT_TRACKING
 	default y if !NO_HZ_FULL
 	help
 	  The major pre-requirement for full dynticks to work is to

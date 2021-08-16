@@ -44,6 +44,8 @@ static struct max8997_muic_irq muic_irqs[] = {
 	{ MAX8997_MUICIRQ_ChgDetRun,	"muic-CHGDETRUN" },
 	{ MAX8997_MUICIRQ_ChgTyp,	"muic-CHGTYP" },
 	{ MAX8997_MUICIRQ_OVP,		"muic-OVP" },
+	{ MAX8997_PMICIRQ_CHGINS,	"pmic-CHGINS" },
+	{ MAX8997_PMICIRQ_CHGRM,	"pmic-CHGRM" },
 };
 
 /* Define supported cable type */
@@ -538,6 +540,8 @@ static void max8997_muic_irq_work(struct work_struct *work)
 	case MAX8997_MUICIRQ_DCDTmr:
 	case MAX8997_MUICIRQ_ChgDetRun:
 	case MAX8997_MUICIRQ_ChgTyp:
+	case MAX8997_PMICIRQ_CHGINS:
+	case MAX8997_PMICIRQ_CHGRM:
 		/* Handle charger cable */
 		ret = max8997_muic_chg_handler(info);
 		break;
@@ -729,7 +733,7 @@ static int max8997_muic_probe(struct platform_device *pdev)
 				2, info->status);
 	if (ret) {
 		dev_err(info->dev, "failed to read MUIC register\n");
-		return ret;
+		goto err_irq;
 	}
 	cable_type = max8997_muic_get_cable_type(info,
 					   MAX8997_CABLE_GROUP_ADC, &attached);
@@ -784,3 +788,4 @@ module_platform_driver(max8997_muic_driver);
 MODULE_DESCRIPTION("Maxim MAX8997 Extcon driver");
 MODULE_AUTHOR("Donggeun Kim <dg77.kim@samsung.com>");
 MODULE_LICENSE("GPL");
+MODULE_ALIAS("platform:max8997-muic");

@@ -164,7 +164,7 @@ struct _vcs_dpi_ip_params_st {
 	double writeback_max_vscl_ratio;
 	double writeback_min_hscl_ratio;
 	double writeback_min_vscl_ratio;
-	double maximum_dsc_bits_per_component;
+	unsigned int maximum_dsc_bits_per_component;
 	unsigned int writeback_max_hscl_taps;
 	unsigned int writeback_max_vscl_taps;
 	unsigned int writeback_line_buffer_luma_buffer_size;
@@ -253,6 +253,8 @@ struct _vcs_dpi_display_pipe_source_params_st {
 	unsigned int viewport_y_c;
 	unsigned int viewport_width_c;
 	unsigned int viewport_height_c;
+	unsigned int viewport_width_max;
+	unsigned int viewport_height_max;
 	unsigned int data_pitch;
 	unsigned int data_pitch_c;
 	unsigned int meta_pitch;
@@ -292,10 +294,10 @@ struct writeback_st {
 struct _vcs_dpi_display_output_params_st {
 	int dp_lanes;
 	double output_bpp;
+	unsigned int dsc_input_bpc;
 	int dsc_enable;
 	int wb_enable;
 	int num_active_wb;
-	int output_bpc;
 	int output_type;
 	int is_virtual;
 	int output_format;

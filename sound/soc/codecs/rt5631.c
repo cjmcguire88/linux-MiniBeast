@@ -417,7 +417,7 @@ static void onebit_depop_mute_stage(struct snd_soc_component *component, int ena
 	hp_zc = snd_soc_component_read(component, RT5631_INT_ST_IRQ_CTRL_2);
 	snd_soc_component_write(component, RT5631_INT_ST_IRQ_CTRL_2, hp_zc & 0xf7ff);
 	if (enable) {
-		schedule_msec_hrtimeout_uninterruptible((10));
+		schedule_timeout_uninterruptible(msecs_to_jiffies(10));
 		/* config one-bit depop parameter */
 		rt5631_write_index(component, RT5631_SPK_INTL_CTRL, 0x307f);
 		snd_soc_component_update_bits(component, RT5631_HP_OUT_VOL,
@@ -436,7 +436,7 @@ static void onebit_depop_mute_stage(struct snd_soc_component *component, int ena
 }
 
 /**
- * onebit_depop_power_stage - step by step depop sequence in power stage.
+ * depop_seq_power_stage - step by step depop sequence in power stage.
  * @component: ASoC component
  * @enable: power on/off
  *
@@ -529,7 +529,7 @@ static void depop_seq_mute_stage(struct snd_soc_component *component, int enable
 	hp_zc = snd_soc_component_read(component, RT5631_INT_ST_IRQ_CTRL_2);
 	snd_soc_component_write(component, RT5631_INT_ST_IRQ_CTRL_2, hp_zc & 0xf7ff);
 	if (enable) {
-		schedule_msec_hrtimeout_uninterruptible((10));
+		schedule_timeout_uninterruptible(msecs_to_jiffies(10));
 
 		/* config depop sequence parameter */
 		rt5631_write_index(component, RT5631_SPK_INTL_CTRL, 0x302f);
@@ -1283,7 +1283,7 @@ static const struct pll_div codec_slave_pll_div[] = {
 	{3072000,  12288000,  0x0a90},
 };
 
-static struct coeff_clk_div coeff_div[] = {
+static const struct coeff_clk_div coeff_div[] = {
 	/* sysclk is 256fs */
 	{2048000,  8000 * 32,  8000, 0x1000},
 	{2048000,  8000 * 64,  8000, 0x0000},
@@ -1695,6 +1695,8 @@ static const struct regmap_config rt5631_regmap_config = {
 	.reg_defaults = rt5631_reg,
 	.num_reg_defaults = ARRAY_SIZE(rt5631_reg),
 	.cache_type = REGCACHE_RBTREE,
+	.use_single_read = true,
+	.use_single_write = true,
 };
 
 static int rt5631_i2c_probe(struct i2c_client *i2c,

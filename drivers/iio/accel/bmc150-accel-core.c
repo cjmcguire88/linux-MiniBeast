@@ -443,26 +443,32 @@ static bool bmc150_apply_acpi_orientation(struct device *dev,
 					  struct iio_mount_matrix *orientation)
 {
 	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
 	struct acpi_device *adev = ACPI_COMPANION(dev);
+	char *name, *alt_name, *label, *str;
 	union acpi_object *obj, *elements;
-	char *name, *alt_name, *str;
 	acpi_status status;
 	int i, j, val[3];
 
 	if (!adev || !acpi_dev_hid_uid_match(adev, "BOSC0200", NULL))
 		return false;
 
-	if (strcmp(dev_name(dev), "i2c-BOSC0200:base") == 0)
+	if (strcmp(dev_name(dev), "i2c-BOSC0200:base") == 0) {
 		alt_name = "ROMK";
-	else
+		label = "accel-base";
+	} else {
 		alt_name = "ROMS";
+		label = "accel-display";
+	}
 
-	if (acpi_has_method(adev->handle, "ROTM"))
+	if (acpi_has_method(adev->handle, "ROTM")) {
 		name = "ROTM";
-	else if (acpi_has_method(adev->handle, alt_name))
+	} else if (acpi_has_method(adev->handle, alt_name)) {
 		name = alt_name;
-	else
+		indio_dev->label = label;
+	} else {
 		return false;
+	}
 
 	status = acpi_evaluate_object(adev->handle, name, NULL, &buffer);
 	if (ACPI_FAILURE(status)) {
@@ -1171,11 +1177,12 @@ static const struct bmc150_accel_chip_info bmc150_accel_chip_info_tbl[] = {
 		/*
 		 * The datasheet page 17 says:
 		 * 15.6, 31.3, 62.5 and 125 mg per LSB.
+		 * IIO unit is m/s^2 so multiply by g = 9.80665 m/s^2.
 		 */
-		.scale_table = { {156000, BMC150_ACCEL_DEF_RANGE_2G},
-				 {313000, BMC150_ACCEL_DEF_RANGE_4G},
-				 {625000, BMC150_ACCEL_DEF_RANGE_8G},
-				 {1250000, BMC150_ACCEL_DEF_RANGE_16G} },
+		.scale_table = { {152984, BMC150_ACCEL_DEF_RANGE_2G},
+				 {306948, BMC150_ACCEL_DEF_RANGE_4G},
+				 {612916, BMC150_ACCEL_DEF_RANGE_8G},
+				 {1225831, BMC150_ACCEL_DEF_RANGE_16G} },
 	},
 	[bma222e] = {
 		.name = "BMA222E",
@@ -1472,7 +1479,6 @@ static int bmc150_accel_triggers_setup(struct iio_dev *indio_dev,
 			break;
 		}
 
-		t->indio_trig->dev.parent = dev;
 		t->indio_trig->ops = &bmc150_accel_trigger_ops;
 		t->intr = bmc150_accel_triggers[i].intr;
 		t->data = data;
@@ -1804,21 +1810,17 @@ EXPORT_SYMBOL_GPL(bmc150_accel_core_probe);
 
 struct i2c_client *bmc150_get_second_device(struct i2c_client *client)
 {
-	struct bmc150_accel_data *data = i2c_get_clientdata(client);
-
-	if (!data)
-		return NULL;
+	struct bmc150_accel_data *data = iio_priv(i2c_get_clientdata(client));
 
 	return data->second_device;
 }
 EXPORT_SYMBOL_GPL(bmc150_get_second_device);
 
-void bmc150_set_second_device(struct i2c_client *client)
+void bmc150_set_second_device(struct i2c_client *client, struct i2c_client *second_dev)
 {
-	struct bmc150_accel_data *data = i2c_get_clientdata(client);
+	struct bmc150_accel_data *data = iio_priv(i2c_get_clientdata(client));
 
-	if (data)
-		data->second_device = client;
+	data->second_device = second_dev;
 }
 EXPORT_SYMBOL_GPL(bmc150_set_second_device);
 

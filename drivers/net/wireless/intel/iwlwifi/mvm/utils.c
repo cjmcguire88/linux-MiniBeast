@@ -683,23 +683,37 @@ void iwl_mvm_accu_radio_stats(struct iwl_mvm *mvm)
 	mvm->accu_radio_stats.on_time_scan += mvm->radio_stats.on_time_scan;
 }
 
+struct iwl_mvm_diversity_iter_data {
+	struct iwl_mvm_phy_ctxt *ctxt;
+	bool result;
+};
+
 static void iwl_mvm_diversity_iter(void *_data, u8 *mac,
 				   struct ieee80211_vif *vif)
 {
 	struct iwl_mvm_vif *mvmvif = iwl_mvm_vif_from_mac80211(vif);
-	bool *result = _data;
+	struct iwl_mvm_diversity_iter_data *data = _data;
 	int i;
+
+	if (mvmvif->phy_ctxt != data->ctxt)
+		return;
 
 	for (i = 0; i < NUM_IWL_MVM_SMPS_REQ; i++) {
 		if (mvmvif->smps_requests[i] == IEEE80211_SMPS_STATIC ||
-		    mvmvif->smps_requests[i] == IEEE80211_SMPS_DYNAMIC)
-			*result = false;
+		    mvmvif->smps_requests[i] == IEEE80211_SMPS_DYNAMIC) {
+			data->result = false;
+			break;
+		}
 	}
 }
 
-bool iwl_mvm_rx_diversity_allowed(struct iwl_mvm *mvm)
+bool iwl_mvm_rx_diversity_allowed(struct iwl_mvm *mvm,
+				  struct iwl_mvm_phy_ctxt *ctxt)
 {
-	bool result = true;
+	struct iwl_mvm_diversity_iter_data data = {
+		.ctxt = ctxt,
+		.result = true,
+	};
 
 	lockdep_assert_held(&mvm->mutex);
 
@@ -711,9 +725,9 @@ bool iwl_mvm_rx_diversity_allowed(struct iwl_mvm *mvm)
 
 	ieee80211_iterate_active_interfaces_atomic(
 			mvm->hw, IEEE80211_IFACE_ITER_NORMAL,
-			iwl_mvm_diversity_iter, &result);
+			iwl_mvm_diversity_iter, &data);
 
-	return result;
+	return data.result;
 }
 
 void iwl_mvm_send_low_latency_cmd(struct iwl_mvm *mvm,
@@ -1030,15 +1044,9 @@ iwl_mvm_tcm_load(struct iwl_mvm *mvm, u32 airtime, unsigned long elapsed)
 	return IWL_MVM_TRAFFIC_LOW;
 }
 
-struct iwl_mvm_tcm_iter_data {
-	struct iwl_mvm *mvm;
-	bool any_sent;
-};
-
 static void iwl_mvm_tcm_iter(void *_data, u8 *mac, struct ieee80211_vif *vif)
 {
-	struct iwl_mvm_tcm_iter_data *data = _data;
-	struct iwl_mvm *mvm = data->mvm;
+	struct iwl_mvm *mvm = _data;
 	struct iwl_mvm_vif *mvmvif = iwl_mvm_vif_from_mac80211(vif);
 	bool low_latency, prev = mvmvif->low_latency & LOW_LATENCY_TRAFFIC;
 
@@ -1060,22 +1068,15 @@ static void iwl_mvm_tcm_iter(void *_data, u8 *mac, struct ieee80211_vif *vif)
 	} else {
 		iwl_mvm_update_quotas(mvm, false, NULL);
 	}
-
-	data->any_sent = true;
 }
 
 static void iwl_mvm_tcm_results(struct iwl_mvm *mvm)
 {
-	struct iwl_mvm_tcm_iter_data data = {
-		.mvm = mvm,
-		.any_sent = false,
-	};
-
 	mutex_lock(&mvm->mutex);
 
 	ieee80211_iterate_active_interfaces(
 		mvm->hw, IEEE80211_IFACE_ITER_NORMAL,
-		iwl_mvm_tcm_iter, &data);
+		iwl_mvm_tcm_iter, mvm);
 
 	if (fw_has_capa(&mvm->fw->ucode_capa, IWL_UCODE_TLV_CAPA_UMAC_SCAN))
 		iwl_mvm_config_scan(mvm);
@@ -1257,7 +1258,6 @@ static unsigned long iwl_mvm_calc_tcm_stats(struct iwl_mvm *mvm,
 	}
 
 	load = iwl_mvm_tcm_load(mvm, total_airtime, elapsed);
-	mvm->tcm.result.global_change = load != mvm->tcm.result.global_load;
 	mvm->tcm.result.global_load = load;
 
 	for (i = 0; i < NUM_NL80211_BANDS; i++) {

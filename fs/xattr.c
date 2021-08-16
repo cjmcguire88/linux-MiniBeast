@@ -120,16 +120,17 @@ xattr_permission(struct user_namespace *mnt_userns, struct inode *inode,
 	}
 
 	/*
-	 * In the user.* namespace, only regular files and directories can have
-	 * extended attributes. For sticky directories, only the owner and
-	 * privileged users can write attributes.
+	 * In the user.* namespace, only regular files, symbolic links, and
+	 * directories can have extended attributes. For symbolic links and
+	 * sticky directories, only the owner and privileged users can write
+	 * attributes.
 	 */
 	if (!strncmp(name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN)) {
-		if (!S_ISREG(inode->i_mode) && !S_ISDIR(inode->i_mode))
+		if (!S_ISREG(inode->i_mode) && !S_ISDIR(inode->i_mode) && !S_ISLNK(inode->i_mode))
 			return (mask & MAY_WRITE) ? -EPERM : -ENODATA;
-		if (S_ISDIR(inode->i_mode) && (inode->i_mode & S_ISVTX) &&
-		    (mask & MAY_WRITE) &&
-		    !inode_owner_or_capable(mnt_userns, inode))
+		if (((S_ISDIR(inode->i_mode) && (inode->i_mode & S_ISVTX))
+		        || S_ISLNK(inode->i_mode)) && (mask & MAY_WRITE)
+		    && !inode_owner_or_capable(mnt_userns, inode))
 			return -EPERM;
 	}
 
@@ -186,12 +187,12 @@ EXPORT_SYMBOL(__vfs_setxattr);
  *  __vfs_setxattr_noperm - perform setxattr operation without performing
  *  permission checks.
  *
- *  @mnt_userns - user namespace of the mount the inode was found from
- *  @dentry - object to perform setxattr on
- *  @name - xattr name to set
- *  @value - value to set @name to
- *  @size - size of @value
- *  @flags - flags to pass into filesystem operations
+ *  @mnt_userns: user namespace of the mount the inode was found from
+ *  @dentry: object to perform setxattr on
+ *  @name: xattr name to set
+ *  @value: value to set @name to
+ *  @size: size of @value
+ *  @flags: flags to pass into filesystem operations
  *
  *  returns the result of the internal setxattr or setsecurity operations.
  *
@@ -242,6 +243,7 @@ int __vfs_setxattr_noperm(struct user_namespace *mnt_userns,
  * __vfs_setxattr_locked - set an extended attribute while holding the inode
  * lock
  *
+ *  @mnt_userns: user namespace of the mount of the target inode
  *  @dentry: object to perform setxattr on
  *  @name: xattr name to set
  *  @value: value to set @name to
@@ -473,6 +475,7 @@ EXPORT_SYMBOL(__vfs_removexattr);
  * __vfs_removexattr_locked - set an extended attribute while holding the inode
  * lock
  *
+ *  @mnt_userns: user namespace of the mount of the target inode
  *  @dentry: object to perform setxattr on
  *  @name: name of xattr to remove
  *  @delegated_inode: on return, will contain an inode pointer that

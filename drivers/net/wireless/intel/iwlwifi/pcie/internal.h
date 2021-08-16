@@ -279,6 +279,8 @@ struct cont_rec {
  *	Context information addresses will be taken from here.
  *	This is driver's local copy for keeping track of size and
  *	count for allocating and freeing the memory.
+ * @iml: image loader image virtual address
+ * @iml_dma_addr: image loader image DMA address
  * @trans: pointer to the generic transport area
  * @scd_base_addr: scheduler sram base address in SRAM
  * @kw: keep warm address
@@ -329,6 +331,7 @@ struct iwl_trans_pcie {
 	};
 	struct iwl_prph_info *prph_info;
 	struct iwl_prph_scratch *prph_scratch;
+	void *iml;
 	dma_addr_t ctxt_info_dma_addr;
 	dma_addr_t prph_info_dma_addr;
 	dma_addr_t prph_scratch_dma_addr;
@@ -446,6 +449,11 @@ struct iwl_trans
 		      const struct pci_device_id *ent,
 		      const struct iwl_cfg_trans_params *cfg_trans);
 void iwl_trans_pcie_free(struct iwl_trans *trans);
+
+bool __iwl_trans_pcie_grab_nic_access(struct iwl_trans *trans);
+#define _iwl_trans_pcie_grab_nic_access(trans)			\
+	__cond_lock(nic_access_nobh,				\
+		    likely(__iwl_trans_pcie_grab_nic_access(trans)))
 
 /*****************************************************
 * RX

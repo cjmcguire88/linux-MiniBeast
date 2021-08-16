@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0 OR BSD-3-Clause
 /*
- * Copyright (C) 2012-2014, 2018-2020 Intel Corporation
+ * Copyright (C) 2012-2014, 2018-2021 Intel Corporation
  * Copyright (C) 2013-2015 Intel Mobile Communications GmbH
  * Copyright (C) 2017 Intel Deutschland GmbH
  */
@@ -151,6 +151,16 @@ static bool iwl_mvm_te_check_disconnect(struct iwl_mvm *mvm,
 	if (errmsg)
 		IWL_ERR(mvm, "%s\n", errmsg);
 
+	if (mvmvif->csa_bcn_pending) {
+		struct iwl_mvm_sta *mvmsta;
+
+		rcu_read_lock();
+		mvmsta = iwl_mvm_sta_from_staid_rcu(mvm, mvmvif->ap_sta_id);
+		if (!WARN_ON(!mvmsta))
+			iwl_mvm_sta_modify_disable_tx(mvm, mvmsta, false);
+		rcu_read_unlock();
+	}
+
 	iwl_mvm_connection_loss(mvm, vif, errmsg);
 	return true;
 }
@@ -285,10 +295,23 @@ static void iwl_mvm_te_handle_notif(struct iwl_mvm *mvm,
 			break;
 		case NL80211_IFTYPE_STATION:
 			/*
+			 * If we are switching channel, don't disconnect
+			 * if the time event is already done. Beacons can
+			 * be delayed a bit after the switch.
+			 */
+			if (te_data->id == TE_CHANNEL_SWITCH_PERIOD) {
+				IWL_DEBUG_TE(mvm,
+					     "No beacon heard and the CS time event is over, don't disconnect\n");
+				break;
+			}
+
+			/*
 			 * By now, we should have finished association
 			 * and know the dtim period.
 			 */
 			iwl_mvm_te_check_disconnect(mvm, te_data->vif,
+				!te_data->vif->bss_conf.assoc ?
+				"Not associated and the time event is over already..." :
 				"No beacon heard and the time event is over already...");
 			break;
 		default:
@@ -713,8 +736,8 @@ void iwl_mvm_remove_time_event(struct iwl_mvm *mvm,
 	IWL_DEBUG_TE(mvm, "Removing TE 0x%x\n", le32_to_cpu(time_cmd.id));
 	ret = iwl_mvm_send_cmd_pdu(mvm, TIME_EVENT_CMD, 0,
 				   sizeof(time_cmd), &time_cmd);
-	if (WARN_ON(ret))
-		return;
+	if (ret)
+		IWL_ERR(mvm, "Couldn't remove the time event\n");
 }
 
 /*
@@ -787,6 +810,8 @@ void iwl_mvm_rx_session_protect_notif(struct iwl_mvm *mvm,
 			 * and know the dtim period.
 			 */
 			iwl_mvm_te_check_disconnect(mvm, vif,
+						    !vif->bss_conf.assoc ?
+						    "Not associated and the session protection is over already..." :
 						    "No beacon heard and the session protection is over already...");
 			spin_lock_bh(&mvm->time_event_lock);
 			iwl_mvm_te_clear_data(mvm, te_data);

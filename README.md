@@ -1,4 +1,4 @@
-# **linux-5.12.1-MiniBeast**
+# **linux-5.13.11-MiniBeast**
 ## *Kernel for MSI GF63 Thin 9SC laptop*
 ___
 
@@ -16,7 +16,7 @@ ___
 ### PATCHES
 + Build optimized for Intel Skylake using graysky's gcc patch [Repo](https://github.com/graysky2/kernel_gcc_patch)
 
-+ Muqss cpu scheduler by Con Kolivas (ck patchset) [Linux-ck](https://wiki.archlinux.org/index.php/linux-ck)
++ Cacule cpu scheduler by Hamad Al Marri  [github](https://github.com/hamadmarri/cacule-cpu-scheduler)
 
 + Clear Linux patches: [Repo](https://github.com/clearlinux-pkgs/linux)  
     0101-i8042-decrease-debug-message-level-to-info.patch  

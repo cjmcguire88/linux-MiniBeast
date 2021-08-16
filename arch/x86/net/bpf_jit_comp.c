@@ -282,7 +282,7 @@ static void emit_prologue(u8 **pprog, u32 stack_depth, bool ebpf_from_cbpf,
 	/* BPF trampoline can be made to work without these nops,
 	 * but let's waste 5 bytes for now and optimize later
 	 */
-	memcpy(prog, ideal_nops[NOP_ATOMIC5], cnt);
+	memcpy(prog, x86_nops[5], cnt);
 	prog += cnt;
 	if (!ebpf_from_cbpf) {
 		if (tail_call_reachable && !is_subprog)
@@ -330,7 +330,7 @@ static int __bpf_arch_text_poke(void *ip, enum bpf_text_poke_type t,
 				void *old_addr, void *new_addr,
 				const bool text_live)
 {
-	const u8 *nop_insn = ideal_nops[NOP_ATOMIC5];
+	const u8 *nop_insn = x86_nops[5];
 	u8 old_insn[X86_PATCH_SIZE];
 	u8 new_insn[X86_PATCH_SIZE];
 	u8 *prog;
@@ -560,7 +560,7 @@ static void emit_bpf_tail_call_direct(struct bpf_jit_poke_descriptor *poke,
 	if (stack_depth)
 		EMIT3_off32(0x48, 0x81, 0xC4, round_up(stack_depth, 8));
 
-	memcpy(prog, ideal_nops[NOP_ATOMIC5], X86_PATCH_SIZE);
+	memcpy(prog, x86_nops[5], X86_PATCH_SIZE);
 	prog += X86_PATCH_SIZE;
 	/* out: */
 
@@ -576,6 +576,9 @@ static void bpf_tail_call_direct_fixup(struct bpf_prog *prog)
 
 	for (i = 0; i < prog->aux->size_poke_tab; i++) {
 		poke = &prog->aux->poke_tab[i];
+		if (poke->aux && poke->aux != prog->aux)
+			continue;
+
 		WARN_ON_ONCE(READ_ONCE(poke->tailcall_target_stable));
 
 		if (poke->reason != BPF_POKE_REASON_TAIL_CALL)
@@ -881,7 +884,7 @@ static int emit_nops(u8 **pprog, int len)
 			noplen = ASM_NOP_MAX;
 
 		for (i = 0; i < noplen; i++)
-			EMIT1(ideal_nops[noplen][i]);
+			EMIT1(x86_nops[noplen][i]);
 		len -= noplen;
 	}
 
@@ -1232,6 +1235,13 @@ static int do_jit(struct bpf_prog *bpf_prog, int *addrs, u8 *image,
 			}
 			break;
 
+			/* speculation barrier */
+		case BPF_ST | BPF_NOSPEC:
+			if (boot_cpu_has(X86_FEATURE_XMM2))
+				/* Emit 'lfence' */
+				EMIT3(0x0F, 0xAE, 0xE8);
+			break;
+
 			/* ST: *(u8*)(dst_reg + off) = imm */
 		case BPF_ST | BPF_MEM | BPF_B:
 			if (is_ereg(dst_reg))
@@ -1297,7 +1307,7 @@ st:			if (is_imm8(insn->off))
 			emit_ldx(&prog, BPF_SIZE(insn->code), dst_reg, src_reg, insn->off);
 			if (BPF_MODE(insn->code) == BPF_PROBE_MEM) {
 				struct exception_table_entry *ex;
-				u8 *_insn = image + proglen;
+				u8 *_insn = image + proglen + (start_of_ldx - temp);
 				s64 delta;
 
 				/* populate jmp_offset for JMP above */
@@ -1556,7 +1566,7 @@ emit_cond_jmp:		/* Convert BPF opcode to x86 */
 			if (is_imm8(jmp_offset)) {
 				if (jmp_padding) {
 					/* To keep the jmp_offset valid, the extra bytes are
-					 * padded before the jump insn, so we substract the
+					 * padded before the jump insn, so we subtract the
 					 * 2 bytes of jmp_cond insn from INSN_SZ_DIFF.
 					 *
 					 * If the previous pass already emits an imm8
@@ -1631,7 +1641,7 @@ emit_jmp:
 				if (jmp_padding) {
 					/* To avoid breaking jmp_offset, the extra bytes
 					 * are padded before the actual jmp insn, so
-					 * 2 bytes is substracted from INSN_SZ_DIFF.
+					 * 2 bytes is subtracted from INSN_SZ_DIFF.
 					 *
 					 * If the previous pass already emits an imm8
 					 * jmp, there is nothing to pad (0 byte).
@@ -2021,7 +2031,7 @@ int arch_prepare_bpf_trampoline(struct bpf_tramp_image *im, void *image, void *i
 		/* remember return value in a stack for bpf prog to access */
 		emit_stx(&prog, BPF_DW, BPF_REG_FP, BPF_REG_0, -8);
 		im->ip_after_call = prog;
-		memcpy(prog, ideal_nops[NOP_ATOMIC5], X86_PATCH_SIZE);
+		memcpy(prog, x86_nops[5], X86_PATCH_SIZE);
 		prog += X86_PATCH_SIZE;
 	}
 
@@ -2354,4 +2364,9 @@ out:
 		bpf_jit_prog_release_other(prog, prog == orig_prog ?
 					   tmp : orig_prog);
 	return prog;
+}
+
+bool bpf_jit_supports_kfunc_call(void)
+{
+	return true;
 }

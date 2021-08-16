@@ -411,6 +411,13 @@ static void br_mrp_del_impl(struct net_bridge *br, struct br_mrp *mrp)
 	cancel_delayed_work_sync(&mrp->in_test_work);
 	br_mrp_switchdev_send_in_test(br, mrp, 0, 0, 0);
 
+	/* Disable the roles */
+	br_mrp_switchdev_set_ring_role(br, mrp, BR_MRP_RING_ROLE_DISABLED);
+	p = rtnl_dereference(mrp->i_port);
+	if (p)
+		br_mrp_switchdev_set_in_role(br, mrp, mrp->in_id, mrp->ring_id,
+					     BR_MRP_IN_ROLE_DISABLED);
+
 	br_mrp_switchdev_del(br, mrp);
 
 	/* Reset the ports */
@@ -620,8 +627,7 @@ int br_mrp_set_ring_state(struct net_bridge *br,
 	if (!mrp)
 		return -EINVAL;
 
-	if (mrp->ring_state == BR_MRP_RING_STATE_CLOSED &&
-	    state->ring_state != BR_MRP_RING_STATE_CLOSED)
+	if (mrp->ring_state != state->ring_state)
 		mrp->ring_transitions++;
 
 	mrp->ring_state = state->ring_state;
@@ -708,8 +714,7 @@ int br_mrp_set_in_state(struct net_bridge *br, struct br_mrp_in_state *state)
 	if (!mrp)
 		return -EINVAL;
 
-	if (mrp->in_state == BR_MRP_IN_STATE_CLOSED &&
-	    state->in_state != BR_MRP_IN_STATE_CLOSED)
+	if (mrp->in_state != state->in_state)
 		mrp->in_transitions++;
 
 	mrp->in_state = state->in_state;

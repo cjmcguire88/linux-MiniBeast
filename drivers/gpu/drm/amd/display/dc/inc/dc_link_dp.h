@@ -52,6 +52,10 @@ bool dp_validate_mode_timing(
 	struct dc_link *link,
 	const struct dc_crtc_timing *timing);
 
+bool decide_edp_link_settings(struct dc_link *link,
+		struct dc_link_settings *link_setting,
+		uint32_t req_bw);
+
 void decide_link_settings(
 	struct dc_stream_state *stream,
 	struct dc_link_settings *link_setting);
@@ -63,6 +67,10 @@ bool perform_link_training_with_retries(
 	struct pipe_ctx *pipe_ctx,
 	enum signal_type signal);
 
+bool hpd_rx_irq_check_link_loss_status(
+	struct dc_link *link,
+	union hpd_irq_data *hpd_irq_dpcd_data);
+
 bool is_mst_supported(struct dc_link *link);
 
 bool detect_dp_sink_caps(struct dc_link *link);
@@ -70,6 +78,8 @@ bool detect_dp_sink_caps(struct dc_link *link);
 void detect_edp_sink_caps(struct dc_link *link);
 
 bool is_dp_active_dongle(const struct dc_link *link);
+
+bool is_edp_ilr_optimization_required(struct dc_link *link, struct dc_crtc_timing *crtc_timing);
 
 void dp_enable_mst_on_sink(struct dc_link *link, bool enable);
 
@@ -86,5 +96,7 @@ bool dp_set_dsc_enable(struct pipe_ctx *pipe_ctx, bool enable);
 bool dp_set_dsc_pps_sdp(struct pipe_ctx *pipe_ctx, bool enable);
 void dp_set_dsc_on_stream(struct pipe_ctx *pipe_ctx, bool enable);
 bool dp_update_dsc_config(struct pipe_ctx *pipe_ctx);
+bool dp_set_dsc_on_rx(struct pipe_ctx *pipe_ctx, bool enable);
+
 
 #endif /* __DC_LINK_DP_H__ */

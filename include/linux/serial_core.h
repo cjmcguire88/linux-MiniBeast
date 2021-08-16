@@ -500,19 +500,38 @@ static inline int uart_prepare_sysrq_char(struct uart_port *port, unsigned int c
 	return 0;
 }
 
-static inline void uart_unlock_and_check_sysrq(struct uart_port *port, unsigned long irqflags)
+static inline void uart_unlock_and_check_sysrq(struct uart_port *port)
 {
 	int sysrq_ch;
 
 	if (!port->has_sysrq) {
-		spin_unlock_irqrestore(&port->lock, irqflags);
+		spin_unlock(&port->lock);
 		return;
 	}
 
 	sysrq_ch = port->sysrq_ch;
 	port->sysrq_ch = 0;
 
-	spin_unlock_irqrestore(&port->lock, irqflags);
+	spin_unlock(&port->lock);
+
+	if (sysrq_ch)
+		handle_sysrq(sysrq_ch);
+}
+
+static inline void uart_unlock_and_check_sysrq_irqrestore(struct uart_port *port,
+		unsigned long flags)
+{
+	int sysrq_ch;
+
+	if (!port->has_sysrq) {
+		spin_unlock_irqrestore(&port->lock, flags);
+		return;
+	}
+
+	sysrq_ch = port->sysrq_ch;
+	port->sysrq_ch = 0;
+
+	spin_unlock_irqrestore(&port->lock, flags);
 
 	if (sysrq_ch)
 		handle_sysrq(sysrq_ch);
@@ -526,9 +545,14 @@ static inline int uart_prepare_sysrq_char(struct uart_port *port, unsigned int c
 {
 	return 0;
 }
-static inline void uart_unlock_and_check_sysrq(struct uart_port *port, unsigned long irqflags)
+static inline void uart_unlock_and_check_sysrq(struct uart_port *port)
 {
-	spin_unlock_irqrestore(&port->lock, irqflags);
+	spin_unlock(&port->lock);
+}
+static inline void uart_unlock_and_check_sysrq_irqrestore(struct uart_port *port,
+		unsigned long flags)
+{
+	spin_unlock_irqrestore(&port->lock, flags);
 }
 #endif	/* CONFIG_MAGIC_SYSRQ_SERIAL */
 

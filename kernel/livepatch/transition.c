@@ -9,6 +9,7 @@
 
 #include <linux/cpu.h>
 #include <linux/stacktrace.h>
+#include <linux/tracehook.h>
 #include "core.h"
 #include "patch.h"
 #include "transition.h"
@@ -282,7 +283,7 @@ static bool klp_try_switch_task(struct task_struct *task)
 {
 	static char err_buf[STACK_ERR_BUF_SIZE];
 	struct rq *rq;
-	struct rq_flags rf;
+	struct rq_flags flags;
 	int ret;
 	bool success = false;
 
@@ -304,7 +305,7 @@ static bool klp_try_switch_task(struct task_struct *task)
 	 * functions.  If all goes well, switch the task to the target patch
 	 * state.
 	 */
-	rq = task_rq_lock(task, &rf);
+	rq = task_rq_lock(task, &flags);
 
 	if (task_running(rq, task) && task != current) {
 		snprintf(err_buf, STACK_ERR_BUF_SIZE,
@@ -323,7 +324,7 @@ static bool klp_try_switch_task(struct task_struct *task)
 	task->patch_state = klp_target_state;
 
 done:
-	task_rq_unlock(rq, task, &rf);
+	task_rq_unlock(rq, task, &flags);
 
 	/*
 	 * Due to console deadlock issues, pr_debug() can't be used while
@@ -369,9 +370,7 @@ static void klp_send_signals(void)
 			 * Send fake signal to all non-kthread tasks which are
 			 * still not migrated.
 			 */
-			spin_lock_irq(&task->sighand->siglock);
-			signal_wake_up(task, 0);
-			spin_unlock_irq(&task->sighand->siglock);
+			set_notify_signal(task);
 		}
 	}
 	read_unlock(&tasklist_lock);

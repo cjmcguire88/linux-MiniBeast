@@ -2,19 +2,6 @@
 /*
  * Scheduler internal types and methods:
  */
-#ifdef CONFIG_SCHED_MUQSS
-#include "MuQSS.h"
-
-/* Begin compatibility wrappers for MuQSS/CFS differences */
-#define rq_rt_nr_running(rq) ((rq)->rt_nr_running)
-#define rq_h_nr_running(rq) ((rq)->nr_running)
-
-#else /* CONFIG_SCHED_MUQSS */
-
-#define rq_rt_nr_running(rq) ((rq)->rt.rt_nr_running)
-#define rq_h_nr_running(rq) ((rq)->cfs.h_nr_running)
-
-
 #include <linux/sched.h>
 
 #include <linux/sched/autogroup.h>
@@ -49,6 +36,7 @@
 #include <uapi/linux/sched/types.h>
 
 #include <linux/binfmts.h>
+#include <linux/bitops.h>
 #include <linux/blkdev.h>
 #include <linux/compat.h>
 #include <linux/context_tracking.h>
@@ -70,6 +58,7 @@
 #include <linux/prefetch.h>
 #include <linux/profile.h>
 #include <linux/psi.h>
+#include <linux/ratelimit.h>
 #include <linux/rcupdate_wait.h>
 #include <linux/security.h>
 #include <linux/stop_machine.h>
@@ -170,6 +159,11 @@ extern void call_trace_sched_update_nr_running(struct rq *rq, int count);
  */
 #define RUNTIME_INF		((u64)~0ULL)
 
+#ifdef CONFIG_CACULE_SCHED
+#define YIELD_MARK	0x8000000000000000ULL
+#define YIELD_UNMARK	0x7FFFFFFFFFFFFFFFULL
+#endif
+
 static inline int idle_policy(int policy)
 {
 	return policy == SCHED_IDLE;
@@ -216,6 +210,13 @@ static inline void update_avg(u64 *avg, u64 sample)
 	s64 diff = sample - *avg;
 	*avg += diff / 8;
 }
+
+/*
+ * Shifting a value by an exponent greater *or equal* to the size of said value
+ * is UB; cap at size-1.
+ */
+#define shr_bound(val, shift)							\
+	(val >> min_t(typeof(shift), shift, BITS_PER_TYPE(typeof(val)) - 1))
 
 /*
  * !! For sched_setattr_nocheck() (kernel) only !!
@@ -529,10 +530,13 @@ struct cfs_rq {
 	unsigned int		idle_h_nr_running; /* SCHED_IDLE */
 
 	u64			exec_clock;
+
+#if !defined(CONFIG_CACULE_SCHED)
 	u64			min_vruntime;
 #ifndef CONFIG_64BIT
 	u64			min_vruntime_copy;
 #endif
+#endif /* CONFIG_CACULE_SCHED */
 
 	struct rb_root_cached	tasks_timeline;
 
@@ -541,9 +545,14 @@ struct cfs_rq {
 	 * It is set to NULL otherwise (i.e when none are currently running).
 	 */
 	struct sched_entity	*curr;
+#ifdef CONFIG_CACULE_SCHED
+	struct cacule_node	*head;
+	struct cacule_node	*tail;
+#else
 	struct sched_entity	*next;
 	struct sched_entity	*last;
 	struct sched_entity	*skip;
+#endif // CONFIG_CACULE_SCHED
 
 #ifdef	CONFIG_SCHED_DEBUG
 	unsigned int		nr_spread_over;
@@ -947,6 +956,11 @@ struct rq {
 	struct rt_rq		rt;
 	struct dl_rq		dl;
 
+#ifdef CONFIG_CACULE_RDB
+	unsigned int		max_IS_score;
+	struct task_struct	*to_migrate_task;
+#endif
+
 #ifdef CONFIG_FAIR_GROUP_SCHED
 	/* list of leaf cfs_rq on this CPU: */
 	struct list_head	leaf_cfs_rq_list;
@@ -976,6 +990,11 @@ struct rq {
 
 	atomic_t		nr_iowait;
 
+#ifdef CONFIG_SCHED_DEBUG
+	u64 last_seen_need_resched_ns;
+	int ticks_without_resched;
+#endif
+
 #ifdef CONFIG_MEMBARRIER
 	int membarrier_state;
 #endif
@@ -988,7 +1007,6 @@ struct rq {
 	unsigned long		cpu_capacity_orig;
 
 	struct callback_head	*balance_callback;
-	unsigned char		balance_push;
 
 	unsigned char		nohz_idle_balance;
 	unsigned char		idle_balance;
@@ -1160,7 +1178,7 @@ static inline u64 __rq_clock_broken(struct rq *rq)
  *
  *	if (rq-clock_update_flags >= RQCF_UPDATED)
  *
- * to check if %RQCF_UPADTED is set. It'll never be shifted more than
+ * to check if %RQCF_UPDATED is set. It'll never be shifted more than
  * one position though, because the next rq_unpin_lock() will shift it
  * back.
  */
@@ -1219,7 +1237,7 @@ static inline void rq_clock_skip_update(struct rq *rq)
 
 /*
  * See rt task throttling, which is the only time a skip
- * request is cancelled.
+ * request is canceled.
  */
 static inline void rq_clock_cancel_skipupdate(struct rq *rq)
 {
@@ -1558,21 +1576,19 @@ static inline unsigned int group_first_cpu(struct sched_group *group)
 
 extern int group_balance_cpu(struct sched_group *sg);
 
-#if defined(CONFIG_SCHED_DEBUG) && defined(CONFIG_SYSCTL)
-void register_sched_domain_sysctl(void);
+#ifdef CONFIG_SCHED_DEBUG
+void update_sched_domain_debugfs(void);
 void dirty_sched_domain_sysctl(int cpu);
-void unregister_sched_domain_sysctl(void);
 #else
-static inline void register_sched_domain_sysctl(void)
+static inline void update_sched_domain_debugfs(void)
 {
 }
 static inline void dirty_sched_domain_sysctl(int cpu)
 {
 }
-static inline void unregister_sched_domain_sysctl(void)
-{
-}
 #endif
+
+extern int sched_update_scaling(void);
 
 extern void flush_smp_call_function_from_idle(void);
 
@@ -1866,7 +1882,7 @@ struct sched_class {
 
 	/*
 	 * The switched_from() call is allowed to drop rq->lock, therefore we
-	 * cannot assume the switched_from/switched_to pair is serliazed by
+	 * cannot assume the switched_from/switched_to pair is serialized by
 	 * rq->lock. They are however serialized by p->pi_lock.
 	 */
 	void (*switched_from)(struct rq *this_rq, struct task_struct *task);
@@ -2371,7 +2387,7 @@ extern struct sched_entity *__pick_first_entity(struct cfs_rq *cfs_rq);
 extern struct sched_entity *__pick_last_entity(struct cfs_rq *cfs_rq);
 
 #ifdef	CONFIG_SCHED_DEBUG
-extern bool sched_debug_enabled;
+extern bool sched_debug_verbose;
 
 extern void print_cfs_stats(struct seq_file *m, int cpu);
 extern void print_rt_stats(struct seq_file *m, int cpu);
@@ -2379,6 +2395,8 @@ extern void print_dl_stats(struct seq_file *m, int cpu);
 extern void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq);
 extern void print_rt_rq(struct seq_file *m, int cpu, struct rt_rq *rt_rq);
 extern void print_dl_rq(struct seq_file *m, int cpu, struct dl_rq *dl_rq);
+
+extern void resched_latency_warn(int cpu, u64 latency);
 #ifdef CONFIG_NUMA_BALANCING
 extern void
 show_numa_stats(struct task_struct *p, struct seq_file *m);
@@ -2386,6 +2404,8 @@ extern void
 print_numa_stats(struct seq_file *m, int node, unsigned long tsf,
 	unsigned long tpf, unsigned long gsf, unsigned long gpf);
 #endif /* CONFIG_NUMA_BALANCING */
+#else
+static inline void resched_latency_warn(int cpu, u64 latency) {}
 #endif /* CONFIG_SCHED_DEBUG */
 
 extern void init_cfs_rq(struct cfs_rq *cfs_rq);
@@ -2398,9 +2418,11 @@ extern void cfs_bandwidth_usage_dec(void);
 #ifdef CONFIG_NO_HZ_COMMON
 #define NOHZ_BALANCE_KICK_BIT	0
 #define NOHZ_STATS_KICK_BIT	1
+#define NOHZ_NEWILB_KICK_BIT	2
 
 #define NOHZ_BALANCE_KICK	BIT(NOHZ_BALANCE_KICK_BIT)
 #define NOHZ_STATS_KICK		BIT(NOHZ_STATS_KICK_BIT)
+#define NOHZ_NEWILB_KICK	BIT(NOHZ_NEWILB_KICK_BIT)
 
 #define NOHZ_KICK_MASK	(NOHZ_BALANCE_KICK | NOHZ_STATS_KICK)
 
@@ -2411,6 +2433,11 @@ extern void nohz_balance_exit_idle(struct rq *rq);
 static inline void nohz_balance_exit_idle(struct rq *rq) { }
 #endif
 
+#if defined(CONFIG_SMP) && defined(CONFIG_NO_HZ_COMMON)
+extern void nohz_run_idle_balance(int cpu);
+#else
+static inline void nohz_run_idle_balance(int cpu) { }
+#endif
 
 #ifdef CONFIG_SMP
 static inline
@@ -2450,7 +2477,7 @@ DECLARE_PER_CPU(struct irqtime, cpu_irqtime);
 
 /*
  * Returns the irqtime minus the softirq time computed by ksoftirqd.
- * Otherwise ksoftirqd's sum_exec_runtime is substracted its own runtime
+ * Otherwise ksoftirqd's sum_exec_runtime is subtracted its own runtime
  * and never move forward.
  */
 static inline u64 irq_time_read(int cpu)
@@ -2530,20 +2557,27 @@ static __always_inline
 unsigned long uclamp_rq_util_with(struct rq *rq, unsigned long util,
 				  struct task_struct *p)
 {
-	unsigned long min_util;
-	unsigned long max_util;
+	unsigned long min_util = 0;
+	unsigned long max_util = 0;
 
 	if (!static_branch_likely(&sched_uclamp_used))
 		return util;
 
-	min_util = READ_ONCE(rq->uclamp[UCLAMP_MIN].value);
-	max_util = READ_ONCE(rq->uclamp[UCLAMP_MAX].value);
-
 	if (p) {
-		min_util = max(min_util, uclamp_eff_value(p, UCLAMP_MIN));
-		max_util = max(max_util, uclamp_eff_value(p, UCLAMP_MAX));
+		min_util = uclamp_eff_value(p, UCLAMP_MIN);
+		max_util = uclamp_eff_value(p, UCLAMP_MAX);
+
+		/*
+		 * Ignore last runnable task's max clamp, as this task will
+		 * reset it. Similarly, no need to read the rq's min clamp.
+		 */
+		if (rq->uclamp_flags & UCLAMP_FLAG_IDLE)
+			goto out;
 	}
 
+	min_util = max_t(unsigned long, min_util, READ_ONCE(rq->uclamp[UCLAMP_MIN].value));
+	max_util = max_t(unsigned long, max_util, READ_ONCE(rq->uclamp[UCLAMP_MAX].value));
+out:
 	/*
 	 * Since CPU's {min,max}_util clamps are MAX aggregated considering
 	 * RUNNABLE tasks with _different_ clamps, we can end up with an
@@ -2731,27 +2765,12 @@ static inline bool is_per_cpu_kthread(struct task_struct *p)
 }
 #endif
 
-void swake_up_all_locked(struct swait_queue_head *q);
-void __prepare_to_swait(struct swait_queue_head *q, struct swait_queue *wait);
+extern void swake_up_all_locked(struct swait_queue_head *q);
+extern void __prepare_to_swait(struct swait_queue_head *q, struct swait_queue *wait);
 
-/* MuQSS compatibility functions */
-#ifdef CONFIG_64BIT
-static inline u64 read_sum_exec_runtime(struct task_struct *t)
-{
-	return t->se.sum_exec_runtime;
-}
-#else
-static inline u64 read_sum_exec_runtime(struct task_struct *t)
-{
-	u64 ns;
-	struct rq_flags rf;
-	struct rq *rq;
-
-	rq = task_rq_lock(t, &rf);
-	ns = t->se.sum_exec_runtime;
-	task_rq_unlock(rq, t, &rf);
-
-	return ns;
-}
+#ifdef CONFIG_PREEMPT_DYNAMIC
+extern int preempt_dynamic_mode;
+extern int sched_dynamic_mode(const char *str);
+extern void sched_dynamic_update(int mode);
 #endif
-#endif /* CONFIG_SCHED_MUQSS */
+

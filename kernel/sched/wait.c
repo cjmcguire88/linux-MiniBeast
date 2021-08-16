@@ -48,6 +48,17 @@ void add_wait_queue_priority(struct wait_queue_head *wq_head, struct wait_queue_
 }
 EXPORT_SYMBOL_GPL(add_wait_queue_priority);
 
+void add_wait_queue_exclusive_lifo(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry)
+{
+	unsigned long flags;
+
+	wq_entry->flags |= WQ_FLAG_EXCLUSIVE;
+	spin_lock_irqsave(&wq_head->lock, flags);
+	__add_wait_queue(wq_head, wq_entry);
+	spin_unlock_irqrestore(&wq_head->lock, flags);
+}
+EXPORT_SYMBOL(add_wait_queue_exclusive_lifo);
+
 void remove_wait_queue(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry)
 {
 	unsigned long flags;
@@ -264,19 +275,37 @@ prepare_to_wait(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_ent
 }
 EXPORT_SYMBOL(prepare_to_wait);
 
-void
+/* Returns true if we are the first waiter in the queue, false otherwise. */
+bool
 prepare_to_wait_exclusive(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry, int state)
+{
+	unsigned long flags;
+	bool was_empty = false;
+
+	wq_entry->flags |= WQ_FLAG_EXCLUSIVE;
+	spin_lock_irqsave(&wq_head->lock, flags);
+	if (list_empty(&wq_entry->entry)) {
+		was_empty = list_empty(&wq_head->head);
+		__add_wait_queue_entry_tail(wq_head, wq_entry);
+	}
+	set_current_state(state);
+	spin_unlock_irqrestore(&wq_head->lock, flags);
+	return was_empty;
+}
+EXPORT_SYMBOL(prepare_to_wait_exclusive);
+
+void prepare_to_wait_exclusive_lifo(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry, int state)
 {
 	unsigned long flags;
 
 	wq_entry->flags |= WQ_FLAG_EXCLUSIVE;
 	spin_lock_irqsave(&wq_head->lock, flags);
 	if (list_empty(&wq_entry->entry))
-		__add_wait_queue_entry_tail(wq_head, wq_entry);
+		__add_wait_queue(wq_head, wq_entry);
 	set_current_state(state);
 	spin_unlock_irqrestore(&wq_head->lock, flags);
 }
-EXPORT_SYMBOL(prepare_to_wait_exclusive);
+EXPORT_SYMBOL(prepare_to_wait_exclusive_lifo);
 
 void init_wait_entry(struct wait_queue_entry *wq_entry, int flags)
 {

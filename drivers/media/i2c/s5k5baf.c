@@ -235,7 +235,7 @@ struct s5k5baf_gpio {
 
 enum s5k5baf_gpio_id {
 	STBY,
-	RST,
+	RSET,
 	NUM_GPIOS,
 };
 
@@ -510,7 +510,7 @@ static void s5k5baf_write_arr_seq(struct s5k5baf *state, u16 addr,
 
 #define s5k5baf_write_seq(state, addr, seq...) \
 	s5k5baf_write_arr_seq(state, addr, sizeof((char[]){ seq }), \
-			      (const u16 []){ seq });
+			      (const u16 []){ seq })
 
 /* add items count at the beginning of the list */
 #define NSEQ(seq...) sizeof((char[]){ seq }), seq
@@ -969,7 +969,7 @@ static int s5k5baf_power_on(struct s5k5baf *state)
 
 	s5k5baf_gpio_deassert(state, STBY);
 	usleep_range(50, 100);
-	s5k5baf_gpio_deassert(state, RST);
+	s5k5baf_gpio_deassert(state, RSET);
 	return 0;
 
 err_reg_dis:
@@ -987,7 +987,7 @@ static int s5k5baf_power_off(struct s5k5baf *state)
 	state->apply_cfg = 0;
 	state->apply_crop = 0;
 
-	s5k5baf_gpio_assert(state, RST);
+	s5k5baf_gpio_assert(state, RSET);
 	s5k5baf_gpio_assert(state, STBY);
 
 	if (!IS_ERR(state->clock))

@@ -5,7 +5,7 @@
  * Copyright 2006-2007	Jiri Benc <jbenc@suse.cz>
  * Copyright 2013-2014  Intel Mobile Communications GmbH
  * Copyright (C) 2017     Intel Deutschland GmbH
- * Copyright (C) 2018 - 2019 Intel Corporation
+ * Copyright (C) 2018-2021 Intel Corporation
  */
 
 #include <net/mac80211.h>
@@ -252,18 +252,18 @@ static void ieee80211_restart_work(struct work_struct *work)
 	struct ieee80211_local *local =
 		container_of(work, struct ieee80211_local, restart_work);
 	struct ieee80211_sub_if_data *sdata;
+	int ret;
 
 	/* wait for scan work complete */
 	flush_workqueue(local->workqueue);
 	flush_work(&local->sched_scan_stopped_work);
+	flush_work(&local->radar_detected_work);
+
+	rtnl_lock();
 
 	WARN(test_bit(SCAN_HW_SCANNING, &local->scanning),
 	     "%s called with hardware scan in progress\n", __func__);
 
-	flush_work(&local->radar_detected_work);
-	/* we might do interface manipulations, so need both */
-	rtnl_lock();
-	wiphy_lock(local->hw.wiphy);
 	list_for_each_entry(sdata, &local->interfaces, list) {
 		/*
 		 * XXX: there may be more work for other vif types and even
@@ -282,6 +282,13 @@ static void ieee80211_restart_work(struct work_struct *work)
 			 * Then we can have a race...
 			 */
 			cancel_work_sync(&sdata->u.mgd.csa_connection_drop_work);
+			if (sdata->vif.csa_active) {
+				sdata_lock(sdata);
+				ieee80211_sta_connection_lost(sdata,
+							      sdata->u.mgd.associated->bssid,
+							      WLAN_REASON_UNSPECIFIED, false);
+				sdata_unlock(sdata);
+			}
 		}
 		flush_delayed_work(&sdata->dec_tailroom_needed_wk);
 	}
@@ -294,8 +301,12 @@ static void ieee80211_restart_work(struct work_struct *work)
 	/* wait for all packet processing to be done */
 	synchronize_net();
 
-	ieee80211_reconfig(local);
+	ret = ieee80211_reconfig(local);
 	wiphy_unlock(local->hw.wiphy);
+
+	if (ret)
+		cfg80211_shutdown_all_interfaces(local->hw.wiphy);
+
 	rtnl_unlock();
 }
 
@@ -1141,8 +1152,11 @@ int ieee80211_register_hw(struct ieee80211_hw *hw)
 	if (local->hw.wiphy->max_scan_ie_len)
 		local->hw.wiphy->max_scan_ie_len -= local->scan_ies_len;
 
-	WARN_ON(!ieee80211_cs_list_valid(local->hw.cipher_schemes,
-					 local->hw.n_cipher_schemes));
+	if (WARN_ON(!ieee80211_cs_list_valid(local->hw.cipher_schemes,
+					     local->hw.n_cipher_schemes))) {
+		result = -EINVAL;
+		goto fail_workqueue;
+	}
 
 	result = ieee80211_init_cipher_suites(local);
 	if (result < 0)

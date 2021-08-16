@@ -431,7 +431,7 @@ static int rt711_interrupt_callback(struct sdw_slave *slave,
 	return 0;
 }
 
-static struct sdw_slave_ops rt711_slave_ops = {
+static const struct sdw_slave_ops rt711_slave_ops = {
 	.read_prop = rt711_read_prop,
 	.interrupt_callback = rt711_interrupt_callback,
 	.update_status = rt711_update_status,
@@ -501,7 +501,7 @@ static int __maybe_unused rt711_dev_resume(struct device *dev)
 	struct rt711_priv *rt711 = dev_get_drvdata(dev);
 	unsigned long time;
 
-	if (!rt711->hw_init)
+	if (!rt711->first_hw_init)
 		return 0;
 
 	if (!slave->unattach_request)

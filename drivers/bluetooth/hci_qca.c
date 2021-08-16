@@ -1066,7 +1066,7 @@ static void qca_controller_memdump(struct work_struct *work)
 		 * packets in the buffer.
 		 */
 		/* For QCA6390, controller does not lost packets but
-		 * sequence number field of packat sometimes has error
+		 * sequence number field of packet sometimes has error
 		 * bits, so skip this checking for missing packet.
 		 */
 		while ((seq_no > qca_memdump->current_seq_no + 1) &&
@@ -1571,6 +1571,20 @@ static void qca_cmd_timeout(struct hci_dev *hdev)
 	mutex_unlock(&qca->hci_memdump_lock);
 }
 
+static bool qca_prevent_wake(struct hci_dev *hdev)
+{
+	struct hci_uart *hu = hci_get_drvdata(hdev);
+	bool wakeup;
+
+	/* UART driver handles the interrupt from BT SoC.So we need to use
+	 * device handle of UART driver to get the status of device may wakeup.
+	 */
+	wakeup = device_may_wakeup(hu->serdev->ctrl->dev.parent);
+	bt_dev_dbg(hu->hdev, "wakeup status : %d", wakeup);
+
+	return !wakeup;
+}
+
 static int qca_wcn3990_init(struct hci_uart *hu)
 {
 	struct qca_serdev *qcadev;
@@ -1721,6 +1735,7 @@ retry:
 		qca_debugfs_init(hdev);
 		hu->hdev->hw_error = qca_hw_error;
 		hu->hdev->cmd_timeout = qca_cmd_timeout;
+		hu->hdev->prevent_wake = qca_prevent_wake;
 	} else if (ret == -ENOENT) {
 		/* No patch/nvm-config found, run with original fw/config */
 		set_bit(QCA_ROM_FW, &qca->flags);
@@ -1820,8 +1835,6 @@ static void qca_power_shutdown(struct hci_uart *hu)
 	unsigned long flags;
 	enum qca_btsoc_type soc_type = qca_soc_type(hu);
 
-	qcadev = serdev_device_get_drvdata(hu->serdev);
-
 	/* From this point we go into power off state. But serial port is
 	 * still open, stop queueing the IBS data and flush all the buffered
 	 * data in skb's.
@@ -1836,6 +1849,8 @@ static void qca_power_shutdown(struct hci_uart *hu)
 	 */
 	if (!hu->serdev)
 		return;
+
+	qcadev = serdev_device_get_drvdata(hu->serdev);
 
 	if (qca_is_wcn399x(soc_type)) {
 		host_set_baudrate(hu, 2400);

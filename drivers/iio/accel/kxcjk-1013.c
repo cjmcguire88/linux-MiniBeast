@@ -133,6 +133,13 @@ enum kx_acpi_type {
 	ACPI_KIOX010A,
 };
 
+enum kxcjk1013_axis {
+	AXIS_X,
+	AXIS_Y,
+	AXIS_Z,
+	AXIS_MAX
+};
+
 struct kxcjk1013_data {
 	struct regulator_bulk_data regulators[2];
 	struct i2c_client *client;
@@ -140,7 +147,11 @@ struct kxcjk1013_data {
 	struct iio_trigger *motion_trig;
 	struct iio_mount_matrix orientation;
 	struct mutex mutex;
-	s16 buffer[8];
+	/* Ensure timestamp naturally aligned */
+	struct {
+		s16 chans[AXIS_MAX];
+		s64 timestamp __aligned(8);
+	} scan;
 	u8 odr_bits;
 	u8 range;
 	int wake_thres;
@@ -152,13 +163,6 @@ struct kxcjk1013_data {
 	int64_t timestamp;
 	enum kx_chipset chipset;
 	enum kx_acpi_type acpi_type;
-};
-
-enum kxcjk1013_axis {
-	AXIS_X,
-	AXIS_Y,
-	AXIS_Z,
-	AXIS_MAX,
 };
 
 enum kxcjk1013_mode {
@@ -1094,12 +1098,12 @@ static irqreturn_t kxcjk1013_trigger_handler(int irq, void *p)
 	ret = i2c_smbus_read_i2c_block_data_or_emulated(data->client,
 							KXCJK1013_REG_XOUT_L,
 							AXIS_MAX * 2,
-							(u8 *)data->buffer);
+							(u8 *)data->scan.chans);
 	mutex_unlock(&data->mutex);
 	if (ret < 0)
 		goto err;
 
-	iio_push_to_buffers_with_timestamp(indio_dev, data->buffer,
+	iio_push_to_buffers_with_timestamp(indio_dev, &data->scan,
 					   data->timestamp);
 err:
 	iio_trigger_notify_done(indio_dev->trig);
@@ -1284,7 +1288,8 @@ static irqreturn_t kxcjk1013_data_rdy_trig_poll(int irq, void *private)
 
 static const char *kxcjk1013_match_acpi_device(struct device *dev,
 					       enum kx_chipset *chipset,
-					       enum kx_acpi_type *acpi_type)
+					       enum kx_acpi_type *acpi_type,
+					       const char **label)
 {
 	const struct acpi_device_id *id;
 
@@ -1292,10 +1297,14 @@ static const char *kxcjk1013_match_acpi_device(struct device *dev,
 	if (!id)
 		return NULL;
 
-	if (strcmp(id->id, "SMO8500") == 0)
+	if (strcmp(id->id, "SMO8500") == 0) {
 		*acpi_type = ACPI_SMO8500;
-	else if (strcmp(id->id, "KIOX010A") == 0)
+	} else if (strcmp(id->id, "KIOX010A") == 0) {
 		*acpi_type = ACPI_KIOX010A;
+		*label = "accel-display";
+	} else if (strcmp(id->id, "KIOX020A") == 0) {
+		*label = "accel-base";
+	}
 
 	*chipset = (enum kx_chipset)id->driver_data;
 
@@ -1368,7 +1377,8 @@ static int kxcjk1013_probe(struct i2c_client *client,
 	} else if (ACPI_HANDLE(&client->dev)) {
 		name = kxcjk1013_match_acpi_device(&client->dev,
 						   &data->chipset,
-						   &data->acpi_type);
+						   &data->acpi_type,
+						   &indio_dev->label);
 	} else
 		return -ENODEV;
 
@@ -1413,7 +1423,6 @@ static int kxcjk1013_probe(struct i2c_client *client,
 			goto err_poweroff;
 		}
 
-		data->dready_trig->dev.parent = &client->dev;
 		data->dready_trig->ops = &kxcjk1013_trigger_ops;
 		iio_trigger_set_drvdata(data->dready_trig, indio_dev);
 		indio_dev->trig = data->dready_trig;
@@ -1422,7 +1431,6 @@ static int kxcjk1013_probe(struct i2c_client *client,
 		if (ret)
 			goto err_poweroff;
 
-		data->motion_trig->dev.parent = &client->dev;
 		data->motion_trig->ops = &kxcjk1013_trigger_ops;
 		iio_trigger_set_drvdata(data->motion_trig, indio_dev);
 		ret = iio_trigger_register(data->motion_trig);

@@ -840,7 +840,6 @@ int dm_get_table_device(struct mapped_device *md, dev_t dev, fmode_t mode,
 	*result = &td->dm_dev;
 	return 0;
 }
-EXPORT_SYMBOL_GPL(dm_get_table_device);
 
 void dm_put_table_device(struct mapped_device *md, struct dm_dev *d)
 {
@@ -854,7 +853,6 @@ void dm_put_table_device(struct mapped_device *md, struct dm_dev *d)
 	}
 	mutex_unlock(&md->table_devices_lock);
 }
-EXPORT_SYMBOL(dm_put_table_device);
 
 static void free_table_devices(struct list_head *devices)
 {
@@ -1239,8 +1237,8 @@ static int dm_dax_zero_page_range(struct dax_device *dax_dev, pgoff_t pgoff,
 
 /*
  * A target may call dm_accept_partial_bio only from the map routine.  It is
- * allowed for all bio types except REQ_PREFLUSH, REQ_OP_ZONE_RESET,
- * REQ_OP_ZONE_OPEN, REQ_OP_ZONE_CLOSE and REQ_OP_ZONE_FINISH.
+ * allowed for all bio types except REQ_PREFLUSH, REQ_OP_ZONE_* zone management
+ * operations and REQ_OP_ZONE_APPEND (zone append writes).
  *
  * dm_accept_partial_bio informs the dm that the target only wants to process
  * additional n_sectors sectors of the bio and the rest of the data should be
@@ -1270,9 +1268,13 @@ void dm_accept_partial_bio(struct bio *bio, unsigned n_sectors)
 {
 	struct dm_target_io *tio = container_of(bio, struct dm_target_io, clone);
 	unsigned bi_size = bio->bi_iter.bi_size >> SECTOR_SHIFT;
+
 	BUG_ON(bio->bi_opf & REQ_PREFLUSH);
+	BUG_ON(op_is_zone_mgmt(bio_op(bio)));
+	BUG_ON(bio_op(bio) == REQ_OP_ZONE_APPEND);
 	BUG_ON(bi_size > *tio->len_ptr);
 	BUG_ON(n_sectors > bi_size);
+
 	*tio->len_ptr -= bi_size - n_sectors;
 	bio->bi_iter.bi_size = n_sectors << SECTOR_SHIFT;
 }
@@ -1641,38 +1643,35 @@ static blk_qc_t __split_and_process_bio(struct mapped_device *md,
 	} else {
 		ci.bio = bio;
 		ci.sector_count = bio_sectors(bio);
-		while (ci.sector_count && !error) {
-			error = __split_and_process_non_flush(&ci);
-			if (ci.sector_count && !error) {
-				/*
-				 * Remainder must be passed to submit_bio_noacct()
-				 * so that it gets handled *after* bios already submitted
-				 * have been completely processed.
-				 * We take a clone of the original to store in
-				 * ci.io->orig_bio to be used by end_io_acct() and
-				 * for dec_pending to use for completion handling.
-				 */
-				struct bio *b = bio_split(bio, bio_sectors(bio) - ci.sector_count,
-							  GFP_NOIO, &md->queue->bio_split);
-				ci.io->orig_bio = b;
+		error = __split_and_process_non_flush(&ci);
+		if (ci.sector_count && !error) {
+			/*
+			 * Remainder must be passed to submit_bio_noacct()
+			 * so that it gets handled *after* bios already submitted
+			 * have been completely processed.
+			 * We take a clone of the original to store in
+			 * ci.io->orig_bio to be used by end_io_acct() and
+			 * for dec_pending to use for completion handling.
+			 */
+			struct bio *b = bio_split(bio, bio_sectors(bio) - ci.sector_count,
+						  GFP_NOIO, &md->queue->bio_split);
+			ci.io->orig_bio = b;
 
-				/*
-				 * Adjust IO stats for each split, otherwise upon queue
-				 * reentry there will be redundant IO accounting.
-				 * NOTE: this is a stop-gap fix, a proper fix involves
-				 * significant refactoring of DM core's bio splitting
-				 * (by eliminating DM's splitting and just using bio_split)
-				 */
-				part_stat_lock();
-				__dm_part_stat_sub(dm_disk(md)->part0,
-						   sectors[op_stat_group(bio_op(bio))], ci.sector_count);
-				part_stat_unlock();
+			/*
+			 * Adjust IO stats for each split, otherwise upon queue
+			 * reentry there will be redundant IO accounting.
+			 * NOTE: this is a stop-gap fix, a proper fix involves
+			 * significant refactoring of DM core's bio splitting
+			 * (by eliminating DM's splitting and just using bio_split)
+			 */
+			part_stat_lock();
+			__dm_part_stat_sub(dm_disk(md)->part0,
+					   sectors[op_stat_group(bio_op(bio))], ci.sector_count);
+			part_stat_unlock();
 
-				bio_chain(b, bio);
-				trace_block_split(b, bio->bi_iter.bi_sector);
-				ret = submit_bio_noacct(bio);
-				break;
-			}
+			bio_chain(b, bio);
+			trace_block_split(b, bio->bi_iter.bi_sector);
+			ret = submit_bio_noacct(bio);
 		}
 	}
 

@@ -430,7 +430,7 @@ static int rt700_interrupt_callback(struct sdw_slave *slave,
  * slave_ops: callbacks for get_clock_stop_mode, clock_stop and
  * port_prep are not defined for now
  */
-static struct sdw_slave_ops rt700_slave_ops = {
+static const struct sdw_slave_ops rt700_slave_ops = {
 	.read_prop = rt700_read_prop,
 	.interrupt_callback = rt700_interrupt_callback,
 	.update_status = rt700_update_status,
@@ -498,7 +498,7 @@ static int __maybe_unused rt700_dev_resume(struct device *dev)
 	struct rt700_priv *rt700 = dev_get_drvdata(dev);
 	unsigned long time;
 
-	if (!rt700->hw_init)
+	if (!rt700->first_hw_init)
 		return 0;
 
 	if (!slave->unattach_request)

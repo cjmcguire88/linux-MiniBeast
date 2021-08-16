@@ -219,6 +219,7 @@ static int pcpu_alloc_lowcore(struct pcpu *pcpu, int cpu)
 	lc->br_r1_trampoline = 0x07f1;	/* br %r1 */
 	lc->return_lpswe = gen_lpswe(__LC_RETURN_PSW);
 	lc->return_mcck_lpswe = gen_lpswe(__LC_RETURN_MCCK_PSW);
+	lc->preempt_count = PREEMPT_DISABLED;
 	if (nmi_alloc_per_cpu(lc))
 		goto out_stack;
 	lowcore_ptr[cpu] = lc;
@@ -429,6 +430,7 @@ void notrace smp_yield_cpu(int cpu)
 	asm volatile("diag %0,0,0x9c"
 		     : : "d" (pcpu_devices[cpu].address));
 }
+EXPORT_SYMBOL_GPL(smp_yield_cpu);
 
 /*
  * Send cpus emergency shutdown signal. This gives the cpus the
@@ -877,7 +879,6 @@ static void smp_init_secondary(void)
 	restore_access_regs(S390_lowcore.access_regs_save_area);
 	cpu_init();
 	rcu_cpu_starting(cpu);
-	preempt_disable();
 	init_cpu_timer();
 	vtime_init();
 	vdso_getcpu_init();

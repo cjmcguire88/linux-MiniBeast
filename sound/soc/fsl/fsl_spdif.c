@@ -801,18 +801,6 @@ static int fsl_spdif_qget(struct snd_kcontrol *kcontrol,
 	return ret;
 }
 
-/* Valid bit information */
-static int fsl_spdif_vbit_info(struct snd_kcontrol *kcontrol,
-				struct snd_ctl_elem_info *uinfo)
-{
-	uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
-	uinfo->count = 1;
-	uinfo->value.integer.min = 0;
-	uinfo->value.integer.max = 1;
-
-	return 0;
-}
-
 /* Get valid good bit from interrupt status register */
 static int fsl_spdif_rx_vbit_get(struct snd_kcontrol *kcontrol,
 				 struct snd_ctl_elem_value *ucontrol)
@@ -925,18 +913,6 @@ static int fsl_spdif_rxrate_get(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-/* User bit sync mode info */
-static int fsl_spdif_usync_info(struct snd_kcontrol *kcontrol,
-				struct snd_ctl_elem_info *uinfo)
-{
-	uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
-	uinfo->count = 1;
-	uinfo->value.integer.min = 0;
-	uinfo->value.integer.max = 1;
-
-	return 0;
-}
-
 /*
  * User bit sync mode:
  * 1 CD User channel subcode
@@ -1018,7 +994,7 @@ static struct snd_kcontrol_new fsl_spdif_ctrls[] = {
 		.name = "IEC958 RX V-Bit Errors",
 		.access = SNDRV_CTL_ELEM_ACCESS_READ |
 			SNDRV_CTL_ELEM_ACCESS_VOLATILE,
-		.info = fsl_spdif_vbit_info,
+		.info = snd_ctl_boolean_mono_info,
 		.get = fsl_spdif_rx_vbit_get,
 	},
 	{
@@ -1027,7 +1003,7 @@ static struct snd_kcontrol_new fsl_spdif_ctrls[] = {
 		.access = SNDRV_CTL_ELEM_ACCESS_READ |
 			SNDRV_CTL_ELEM_ACCESS_WRITE |
 			SNDRV_CTL_ELEM_ACCESS_VOLATILE,
-		.info = fsl_spdif_vbit_info,
+		.info = snd_ctl_boolean_mono_info,
 		.get = fsl_spdif_tx_vbit_get,
 		.put = fsl_spdif_tx_vbit_put,
 	},
@@ -1047,7 +1023,7 @@ static struct snd_kcontrol_new fsl_spdif_ctrls[] = {
 		.access = SNDRV_CTL_ELEM_ACCESS_READ |
 			SNDRV_CTL_ELEM_ACCESS_WRITE |
 			SNDRV_CTL_ELEM_ACCESS_VOLATILE,
-		.info = fsl_spdif_usync_info,
+		.info = snd_ctl_boolean_mono_info,
 		.get = fsl_spdif_usync_get,
 		.put = fsl_spdif_usync_put,
 	},
@@ -1318,8 +1294,7 @@ static int fsl_spdif_probe(struct platform_device *pdev)
 	if (IS_ERR(regs))
 		return PTR_ERR(regs);
 
-	spdif_priv->regmap = devm_regmap_init_mmio_clk(&pdev->dev,
-			"core", regs, &fsl_spdif_regmap_config);
+	spdif_priv->regmap = devm_regmap_init_mmio(&pdev->dev, regs, &fsl_spdif_regmap_config);
 	if (IS_ERR(spdif_priv->regmap)) {
 		dev_err(&pdev->dev, "regmap init failed\n");
 		return PTR_ERR(spdif_priv->regmap);
@@ -1400,14 +1375,27 @@ static int fsl_spdif_probe(struct platform_device *pdev)
 					      &spdif_priv->cpu_dai_drv, 1);
 	if (ret) {
 		dev_err(&pdev->dev, "failed to register DAI: %d\n", ret);
-		return ret;
+		goto err_pm_disable;
 	}
 
 	ret = imx_pcm_dma_init(pdev, IMX_SPDIF_DMABUF_SIZE);
-	if (ret && ret != -EPROBE_DEFER)
-		dev_err(&pdev->dev, "imx_pcm_dma_init failed: %d\n", ret);
+	if (ret) {
+		dev_err_probe(&pdev->dev, ret, "imx_pcm_dma_init failed\n");
+		goto err_pm_disable;
+	}
 
 	return ret;
+
+err_pm_disable:
+	pm_runtime_disable(&pdev->dev);
+	return ret;
+}
+
+static int fsl_spdif_remove(struct platform_device *pdev)
+{
+	pm_runtime_disable(&pdev->dev);
+
+	return 0;
 }
 
 #ifdef CONFIG_PM
@@ -1415,6 +1403,9 @@ static int fsl_spdif_runtime_suspend(struct device *dev)
 {
 	struct fsl_spdif_priv *spdif_priv = dev_get_drvdata(dev);
 	int i;
+
+	/* Disable all the interrupts */
+	regmap_update_bits(spdif_priv->regmap, REG_SPDIF_SIE, 0xffffff, 0);
 
 	regmap_read(spdif_priv->regmap, REG_SPDIF_SRPC,
 			&spdif_priv->regcache_srpc);
@@ -1512,6 +1503,7 @@ static struct platform_driver fsl_spdif_driver = {
 		.pm = &fsl_spdif_pm,
 	},
 	.probe = fsl_spdif_probe,
+	.remove = fsl_spdif_remove,
 };
 
 module_platform_driver(fsl_spdif_driver);

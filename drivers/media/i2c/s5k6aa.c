@@ -177,7 +177,7 @@ static const char * const s5k6aa_supply_names[] = {
 
 enum s5k6aa_gpio_id {
 	STBY,
-	RST,
+	RSET,
 	GPIO_NUM,
 };
 
@@ -416,7 +416,7 @@ static int s5k6aa_set_ahb_address(struct i2c_client *client)
 }
 
 /**
- * s5k6aa_configure_pixel_clock - apply ISP main clock/PLL configuration
+ * s5k6aa_configure_pixel_clocks - apply ISP main clock/PLL configuration
  * @s5k6aa: pointer to &struct s5k6aa describing the device
  *
  * Configure the internal ISP PLL for the required output frequency.
@@ -841,7 +841,7 @@ static int __s5k6aa_power_on(struct s5k6aa *s5k6aa)
 		ret = s5k6aa->s_power(1);
 	usleep_range(4000, 5000);
 
-	if (s5k6aa_gpio_deassert(s5k6aa, RST))
+	if (s5k6aa_gpio_deassert(s5k6aa, RSET))
 		msleep(20);
 
 	return ret;
@@ -851,7 +851,7 @@ static int __s5k6aa_power_off(struct s5k6aa *s5k6aa)
 {
 	int ret;
 
-	if (s5k6aa_gpio_assert(s5k6aa, RST))
+	if (s5k6aa_gpio_assert(s5k6aa, RSET))
 		usleep_range(100, 150);
 
 	if (s5k6aa->s_power) {
@@ -1510,7 +1510,7 @@ static int s5k6aa_configure_gpios(struct s5k6aa *s5k6aa,
 	int ret;
 
 	s5k6aa->gpio[STBY].gpio = -EINVAL;
-	s5k6aa->gpio[RST].gpio  = -EINVAL;
+	s5k6aa->gpio[RSET].gpio  = -EINVAL;
 
 	gpio = &pdata->gpio_stby;
 	if (gpio_is_valid(gpio->gpio)) {
@@ -1533,7 +1533,7 @@ static int s5k6aa_configure_gpios(struct s5k6aa *s5k6aa,
 		if (ret < 0)
 			return ret;
 
-		s5k6aa->gpio[RST] = *gpio;
+		s5k6aa->gpio[RSET] = *gpio;
 	}
 
 	return 0;

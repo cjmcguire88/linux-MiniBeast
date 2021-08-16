@@ -1094,11 +1094,9 @@ static int set_chmod_dacl(struct cifs_acl *pdacl, struct cifs_acl *pndacl,
 	struct cifs_ace *pnntace = NULL;
 	char *nacl_base = NULL;
 	u32 num_aces = 0;
-	__u64 nmode;
 	bool new_aces_set = false;
 
 	/* Assuming that pndacl and pnmode are never NULL */
-	nmode = *pnmode;
 	nacl_base = (char *)pndacl;
 	nsize = sizeof(struct cifs_acl);
 
@@ -1310,7 +1308,7 @@ static int build_sec_desc(struct cifs_ntsd *pntsd, struct cifs_ntsd *pnntsd,
 		ndacl_ptr = (struct cifs_acl *)((char *)pnntsd + ndacloffset);
 		ndacl_ptr->revision =
 			dacloffset ? dacl_ptr->revision : cpu_to_le16(ACL_REVISION);
-		ndacl_ptr->num_aces = dacl_ptr->num_aces;
+		ndacl_ptr->num_aces = dacl_ptr ? dacl_ptr->num_aces : 0;
 
 		if (uid_valid(uid)) { /* chown */
 			uid_t id;
@@ -1651,7 +1649,7 @@ id_mode_to_cifs_acl(struct inode *inode, const char *path, __u64 *pnmode,
 	 * Add three ACEs for owner, group, everyone getting rid of other ACEs
 	 * as chmod disables ACEs and set the security descriptor. Allocate
 	 * memory for the smb header, set security descriptor request security
-	 * descriptor parameters, and secuirty descriptor itself
+	 * descriptor parameters, and security descriptor itself
 	 */
 	nsecdesclen = max_t(u32, nsecdesclen, DEFAULT_SEC_DESC_LEN);
 	pnntsd = kmalloc(nsecdesclen, GFP_KERNEL);

@@ -40,7 +40,7 @@
 #include "msft.h"
 
 #define MGMT_VERSION	1
-#define MGMT_REVISION	19
+#define MGMT_REVISION	20
 
 static const u16 mgmt_commands[] = {
 	MGMT_OP_READ_INDEX_LIST,
@@ -108,6 +108,8 @@ static const u16 mgmt_commands[] = {
 	MGMT_OP_START_LIMITED_DISCOVERY,
 	MGMT_OP_READ_EXT_INFO,
 	MGMT_OP_SET_APPEARANCE,
+	MGMT_OP_GET_PHY_CONFIGURATION,
+	MGMT_OP_SET_PHY_CONFIGURATION,
 	MGMT_OP_SET_BLOCKED_KEYS,
 	MGMT_OP_SET_WIDEBAND_SPEECH,
 	MGMT_OP_READ_CONTROLLER_CAP,
@@ -166,6 +168,8 @@ static const u16 mgmt_events[] = {
 	MGMT_EV_PHY_CONFIGURATION_CHANGED,
 	MGMT_EV_EXP_FEATURE_CHANGED,
 	MGMT_EV_DEVICE_FLAGS_CHANGED,
+	MGMT_EV_ADV_MONITOR_ADDED,
+	MGMT_EV_ADV_MONITOR_REMOVED,
 	MGMT_EV_CONTROLLER_SUSPEND,
 	MGMT_EV_CONTROLLER_RESUME,
 };
@@ -196,8 +200,6 @@ static const u16 mgmt_untrusted_events[] = {
 	MGMT_EV_EXT_INDEX_REMOVED,
 	MGMT_EV_EXT_INFO_CHANGED,
 	MGMT_EV_EXP_FEATURE_CHANGED,
-	MGMT_EV_ADV_MONITOR_ADDED,
-	MGMT_EV_ADV_MONITOR_REMOVED,
 };
 
 #define CACHE_TIMEOUT	msecs_to_jiffies(2 * 1000)
@@ -250,12 +252,15 @@ static const u8 mgmt_status_table[] = {
 	MGMT_STATUS_TIMEOUT,		/* Instant Passed */
 	MGMT_STATUS_NOT_SUPPORTED,	/* Pairing Not Supported */
 	MGMT_STATUS_FAILED,		/* Transaction Collision */
+	MGMT_STATUS_FAILED,		/* Reserved for future use */
 	MGMT_STATUS_INVALID_PARAMS,	/* Unacceptable Parameter */
 	MGMT_STATUS_REJECTED,		/* QoS Rejected */
 	MGMT_STATUS_NOT_SUPPORTED,	/* Classification Not Supported */
 	MGMT_STATUS_REJECTED,		/* Insufficient Security */
 	MGMT_STATUS_INVALID_PARAMS,	/* Parameter Out Of Range */
+	MGMT_STATUS_FAILED,		/* Reserved for future use */
 	MGMT_STATUS_BUSY,		/* Role Switch Pending */
+	MGMT_STATUS_FAILED,		/* Reserved for future use */
 	MGMT_STATUS_FAILED,		/* Slot Violation */
 	MGMT_STATUS_FAILED,		/* Role Switch Failed */
 	MGMT_STATUS_INVALID_PARAMS,	/* EIR Too Large */
@@ -3728,8 +3733,11 @@ static int read_controller_cap(struct sock *sk, struct hci_dev *hdev,
 
 	/* When the Read Simple Pairing Options command is supported, then
 	 * the remote public key validation is supported.
+	 *
+	 * Alternatively, when Microsoft extensions are available, they can
+	 * indicate support for public key validation as well.
 	 */
-	if (hdev->commands[41] & 0x08)
+	if ((hdev->commands[41] & 0x08) || msft_curve_validity(hdev))
 		flags |= 0x01;	/* Remote public key validation (BR/EDR) */
 
 	flags |= 0x02;		/* Remote public key validation (LE) */
@@ -3982,7 +3990,7 @@ static int set_exp_feature(struct sock *sk, struct hci_dev *hdev,
 		if (hdev_is_powered(hdev))
 			return mgmt_cmd_status(sk, hdev->id,
 					       MGMT_OP_SET_EXP_FEATURE,
-					       MGMT_STATUS_NOT_POWERED);
+					       MGMT_STATUS_REJECTED);
 
 		/* Parameters are limited to a single octet */
 		if (data_len != MGMT_SET_EXP_FEATURE_SIZE + 1)
@@ -4052,6 +4060,8 @@ static int get_device_flags(struct sock *sk, struct hci_dev *hdev, void *data,
 		   &cp->addr.bdaddr, cp->addr.type);
 
 	hci_dev_lock(hdev);
+
+	memset(&rp, 0, sizeof(rp));
 
 	if (cp->addr.type == BDADDR_BREDR) {
 		br_params = hci_bdaddr_list_lookup_with_flags(&hdev->whitelist,
@@ -7432,6 +7442,7 @@ static u32 get_supported_adv_flags(struct hci_dev *hdev)
 	flags |= MGMT_ADV_PARAM_TIMEOUT;
 	flags |= MGMT_ADV_PARAM_INTERVALS;
 	flags |= MGMT_ADV_PARAM_TX_POWER;
+	flags |= MGMT_ADV_PARAM_SCAN_RSP;
 
 	/* In extended adv TX_POWER returned from Set Adv Param
 	 * will be always valid.
@@ -7475,7 +7486,7 @@ static int read_adv_features(struct sock *sk, struct hci_dev *hdev,
 	 * advertising.
 	 */
 	if (hci_dev_test_flag(hdev, HCI_ENABLE_LL_PRIVACY))
-		return mgmt_cmd_status(sk, hdev->id, MGMT_OP_SET_ADVERTISING,
+		return mgmt_cmd_status(sk, hdev->id, MGMT_OP_READ_ADV_FEATURES,
 				       MGMT_STATUS_NOT_SUPPORTED);
 
 	hci_dev_lock(hdev);
@@ -7578,6 +7589,9 @@ static bool tlv_data_is_valid(struct hci_dev *hdev, u32 adv_flags, u8 *data,
 	/* Make sure that the data is correctly formatted. */
 	for (i = 0, cur_len = 0; i < len; i += (cur_len + 1)) {
 		cur_len = data[i];
+
+		if (!cur_len)
+			continue;
 
 		if (data[i + 1] == EIR_FLAGS &&
 		    (!is_adv_data || flags_managed(adv_flags)))
@@ -7976,7 +7990,6 @@ static int add_ext_adv_params(struct sock *sk, struct hci_dev *hdev,
 		goto unlock;
 	}
 
-	hdev->cur_adv_instance = cp->instance;
 	/* Submit request for advertising params if ext adv available */
 	if (ext_adv_capable(hdev)) {
 		hci_req_init(&req, hdev);

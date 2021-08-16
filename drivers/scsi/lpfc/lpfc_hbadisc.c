@@ -1,7 +1,7 @@
 /*******************************************************************
  * This file is part of the Emulex Linux Device Driver for         *
  * Fibre Channel Host Bus Adapters.                                *
- * Copyright (C) 2017-2020 Broadcom. All Rights Reserved. The term *
+ * Copyright (C) 2017-2021 Broadcom. All Rights Reserved. The term *
  * “Broadcom” refers to Broadcom Inc. and/or its subsidiaries.     *
  * Copyright (C) 2004-2016 Emulex.  All rights reserved.           *
  * EMULEX and SLI are trademarks of Emulex.                        *
@@ -102,20 +102,20 @@ lpfc_rport_invalid(struct fc_rport *rport)
 
 	rdata = rport->dd_data;
 	if (!rdata) {
-		pr_err("**** %s: NULL dd_data on rport %p SID x%x\n",
+		pr_err("**** %s: NULL dd_data on rport x%px SID x%x\n",
 		       __func__, rport, rport->scsi_target_id);
 		return -EINVAL;
 	}
 
 	ndlp = rdata->pnode;
 	if (!rdata->pnode) {
-		pr_err("**** %s: NULL ndlp on rport %p SID x%x\n",
+		pr_err("**** %s: NULL ndlp on rport x%px SID x%x\n",
 		       __func__, rport, rport->scsi_target_id);
 		return -EINVAL;
 	}
 
 	if (!ndlp->vport) {
-		pr_err("**** %s: Null vport on ndlp %p, DID x%x rport %p "
+		pr_err("**** %s: Null vport on ndlp x%px, DID x%x rport x%px "
 		       "SID x%x\n", __func__, ndlp, ndlp->nlp_DID, rport,
 		       rport->scsi_target_id);
 		return -EINVAL;
@@ -140,11 +140,8 @@ lpfc_terminate_rport_io(struct fc_rport *rport)
 			      "rport terminate: sid:x%x did:x%x flg:x%x",
 			      ndlp->nlp_sid, ndlp->nlp_DID, ndlp->nlp_flag);
 
-	if (ndlp->nlp_sid != NLP_NO_SID) {
-		lpfc_sli_abort_iocb(vport,
-				    &vport->phba->sli.sli3_ring[LPFC_FCP_RING],
-				    ndlp->nlp_sid, 0, LPFC_CTX_TGT);
-	}
+	if (ndlp->nlp_sid != NLP_NO_SID)
+		lpfc_sli_abort_iocb(vport, ndlp->nlp_sid, 0, LPFC_CTX_TGT);
 }
 
 /*
@@ -171,7 +168,7 @@ lpfc_dev_loss_tmo_callbk(struct fc_rport *rport)
 		ndlp->nlp_sid, ndlp->nlp_DID, ndlp->nlp_flag);
 
 	lpfc_printf_vlog(ndlp->vport, KERN_INFO, LOG_NODE,
-			 "3181 dev_loss_callbk x%06x, rport %p flg x%x "
+			 "3181 dev_loss_callbk x%06x, rport x%px flg x%x "
 			 "load_flag x%x refcnt %d\n",
 			 ndlp->nlp_DID, ndlp->rport, ndlp->nlp_flag,
 			 vport->load_flag, kref_read(&ndlp->kref));
@@ -299,8 +296,7 @@ lpfc_dev_loss_tmo_handler(struct lpfc_nodelist *ndlp)
 
 	if (ndlp->nlp_sid != NLP_NO_SID) {
 		warn_on = 1;
-		lpfc_sli_abort_iocb(vport, &phba->sli.sli3_ring[LPFC_FCP_RING],
-				    ndlp->nlp_sid, 0, LPFC_CTX_TGT);
+		lpfc_sli_abort_iocb(vport, ndlp->nlp_sid, 0, LPFC_CTX_TGT);
 	}
 
 	if (warn_on) {
@@ -1486,7 +1482,7 @@ lpfc_copy_fcf_record(struct lpfc_fcf_rec *fcf_rec,
 }
 
 /**
- * lpfc_update_fcf_record - Update driver fcf record
+ * __lpfc_update_fcf_record - Update driver fcf record
  * @phba: pointer to lpfc hba data structure.
  * @fcf_rec: pointer to driver fcf record.
  * @new_fcf_record: pointer to hba fcf record.
@@ -4793,12 +4789,17 @@ lpfc_nlp_logo_unreg(struct lpfc_hba *phba, LPFC_MBOXQ_t *pmb)
 		ndlp->nlp_defer_did = NLP_EVT_NOTHING_PENDING;
 		lpfc_issue_els_plogi(vport, ndlp->nlp_DID, 0);
 	} else {
+		/* NLP_RELEASE_RPI is only set for SLI4 ports. */
 		if (ndlp->nlp_flag & NLP_RELEASE_RPI) {
 			lpfc_sli4_free_rpi(vport->phba, ndlp->nlp_rpi);
+			spin_lock_irq(&ndlp->lock);
 			ndlp->nlp_flag &= ~NLP_RELEASE_RPI;
 			ndlp->nlp_rpi = LPFC_RPI_ALLOC_ERROR;
+			spin_unlock_irq(&ndlp->lock);
 		}
+		spin_lock_irq(&ndlp->lock);
 		ndlp->nlp_flag &= ~NLP_UNREG_INP;
+		spin_unlock_irq(&ndlp->lock);
 	}
 }
 
@@ -5133,8 +5134,10 @@ lpfc_cleanup_node(struct lpfc_vport *vport, struct lpfc_nodelist *ndlp)
 	list_del_init(&ndlp->dev_loss_evt.evt_listp);
 	list_del_init(&ndlp->recovery_evt.evt_listp);
 	lpfc_cleanup_vports_rrqs(vport, ndlp);
+
 	if (phba->sli_rev == LPFC_SLI_REV4)
 		ndlp->nlp_flag |= NLP_RELEASE_RPI;
+
 	return 0;
 }
 
@@ -5956,10 +5959,12 @@ lpfc_mbx_cmpl_fdmi_reg_login(struct lpfc_hba *phba, LPFC_MBOXQ_t *pmb)
 	 * DHBA -> DPRT -> RHBA -> RPA  (physical port)
 	 * DPRT -> RPRT (vports)
 	 */
-	if (vport->port_type == LPFC_PHYSICAL_PORT)
+	if (vport->port_type == LPFC_PHYSICAL_PORT) {
+		phba->link_flag &= ~LS_CT_VEN_RPA; /* For extra Vendor RPA */
 		lpfc_fdmi_cmd(vport, ndlp, SLI_MGMT_DHBA, 0);
-	else
+	} else {
 		lpfc_fdmi_cmd(vport, ndlp, SLI_MGMT_DPRT, 0);
+	}
 
 
 	/* decrement the node reference count held for this callback
@@ -6081,12 +6086,12 @@ lpfc_find_vport_by_vpid(struct lpfc_hba *phba, uint16_t vpi)
 		 * Translate the physical vpi to the logical vpi.  The
 		 * vport stores the logical vpi.
 		 */
-		for (i = 0; i < phba->max_vpi; i++) {
+		for (i = 0; i <= phba->max_vpi; i++) {
 			if (vpi == phba->vpi_ids[i])
 				break;
 		}
 
-		if (i >= phba->max_vpi) {
+		if (i > phba->max_vpi) {
 			lpfc_printf_log(phba, KERN_ERR, LOG_TRACE_EVENT,
 					"2936 Could not find Vport mapped "
 					"to vpi %d\n", vpi);
@@ -6170,7 +6175,7 @@ lpfc_nlp_release(struct kref *kref)
 		ndlp->nlp_DID, ndlp->nlp_flag, ndlp->nlp_type);
 
 	lpfc_printf_vlog(vport, KERN_INFO, LOG_NODE,
-			"0279 %s: ndlp:%p did %x refcnt:%d rpi:%x\n",
+			 "0279 %s: ndlp: x%px did %x refcnt:%d rpi:%x\n",
 			 __func__, ndlp, ndlp->nlp_DID,
 			 kref_read(&ndlp->kref), ndlp->nlp_rpi);
 
@@ -6178,8 +6183,23 @@ lpfc_nlp_release(struct kref *kref)
 	lpfc_cancel_retry_delay_tmo(vport, ndlp);
 	lpfc_cleanup_node(vport, ndlp);
 
-	/* Clear Node key fields to give other threads notice
-	 * that this node memory is not valid anymore.
+	/* Not all ELS transactions have registered the RPI with the port.
+	 * In these cases the rpi usage is temporary and the node is
+	 * released when the WQE is completed.  Catch this case to free the
+	 * RPI to the pool.  Because this node is in the release path, a lock
+	 * is unnecessary.  All references are gone and the node has been
+	 * dequeued.
+	 */
+	if (ndlp->nlp_flag & NLP_RELEASE_RPI) {
+		if (ndlp->nlp_rpi != LPFC_RPI_ALLOC_ERROR &&
+		    !(ndlp->nlp_flag & (NLP_RPI_REGISTERED | NLP_UNREG_INP))) {
+			lpfc_sli4_free_rpi(vport->phba, ndlp->nlp_rpi);
+			ndlp->nlp_rpi = LPFC_RPI_ALLOC_ERROR;
+		}
+	}
+
+	/* The node is not freed back to memory, it is released to a pool so
+	 * the node fields need to be cleaned up.
 	 */
 	ndlp->vport = NULL;
 	ndlp->nlp_state = NLP_STE_FREED_NODE;
@@ -6259,6 +6279,7 @@ lpfc_nlp_not_used(struct lpfc_nodelist *ndlp)
 		"node not used:   did:x%x flg:x%x refcnt:x%x",
 		ndlp->nlp_DID, ndlp->nlp_flag,
 		kref_read(&ndlp->kref));
+
 	if (kref_read(&ndlp->kref) == 1)
 		if (lpfc_nlp_put(ndlp))
 			return 1;

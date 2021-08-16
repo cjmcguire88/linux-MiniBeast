@@ -188,6 +188,7 @@ static void init_gic_priority_masking(void)
 	cpuflags = read_sysreg(daif);
 
 	WARN_ON(!(cpuflags & PSR_I_BIT));
+	WARN_ON(!(cpuflags & PSR_F_BIT));
 
 	gic_write_pmr(GIC_PRIO_IRQON | GIC_PRIO_PSR_I_SET);
 }
@@ -223,7 +224,6 @@ asmlinkage notrace void secondary_start_kernel(void)
 		init_gic_priority_masking();
 
 	rcu_cpu_starting(cpu);
-	preempt_disable();
 	trace_hardirqs_off();
 
 	/*
