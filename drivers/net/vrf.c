@@ -274,7 +274,7 @@ vrf_map_register_dev(struct net_device *dev, struct netlink_ext_ack *extack)
 	int res;
 
 	/* we pre-allocate elements used in the spin-locked section (so that we
-	 * keep the spinlock as short as possibile).
+	 * keep the spinlock as short as possible).
 	 */
 	new_me = vrf_map_elem_alloc(GFP_KERNEL);
 	if (!new_me)
@@ -857,30 +857,24 @@ static int vrf_finish_output(struct net *net, struct sock *sk, struct sk_buff *s
 	unsigned int hh_len = LL_RESERVED_SPACE(dev);
 	struct neighbour *neigh;
 	bool is_v6gw = false;
-	int ret = -EINVAL;
 
 	nf_reset_ct(skb);
 
 	/* Be paranoid, rather than too clever. */
 	if (unlikely(skb_headroom(skb) < hh_len && dev->header_ops)) {
-		struct sk_buff *skb2;
-
-		skb2 = skb_realloc_headroom(skb, LL_RESERVED_SPACE(dev));
-		if (!skb2) {
-			ret = -ENOMEM;
-			goto err;
+		skb = skb_expand_head(skb, hh_len);
+		if (!skb) {
+			dev->stats.tx_errors++;
+			return -ENOMEM;
 		}
-		if (skb->sk)
-			skb_set_owner_w(skb2, skb->sk);
-
-		consume_skb(skb);
-		skb = skb2;
 	}
 
 	rcu_read_lock_bh();
 
 	neigh = ip_neigh_for_gw(rt, skb, &is_v6gw);
 	if (!IS_ERR(neigh)) {
+		int ret;
+
 		sock_confirm_neigh(skb, neigh);
 		/* if crossing protocols, can not use the cached header */
 		ret = neigh_output(neigh, skb, is_v6gw);
@@ -889,9 +883,8 @@ static int vrf_finish_output(struct net *net, struct sock *sk, struct sk_buff *s
 	}
 
 	rcu_read_unlock_bh();
-err:
 	vrf_tx_error(skb->dev, skb);
-	return ret;
+	return -EINVAL;
 }
 
 static int vrf_output(struct net *net, struct sock *sk, struct sk_buff *skb)

@@ -1,14 +1,17 @@
-# **linux-5.13.11-MiniBeast**
+# **linux-5.15-MiniBeast**
+
 ## *Kernel for MSI GF63 Thin 9SC laptop*
+
 ___
 
 ### KEY FEATURES
+
 + Intel P-State cpufreq driver [CPUfreq drivers](https://wiki.archlinux.org/index.php/CPU_frequency_scaling#CPU_frequency_driver)
 + Disabled NUMA [Non-uniform memory access](https://en.wikipedia.org/wiki/Non-uniform_memory_access) | [Discussion](https://unix.stackexchange.com/questions/92302/enabling-numa-for-intel-core-i7)
-+ 1000hz timer freq for low latency [Timer frequency](https://elinux.org/Kernel_Timer_Systems)
-+ PREEMPT (low latency desktop) [Kernel preemption](https://en.wikipedia.org/wiki/Kerneemption) 
++ 2000hz timer freq for low latency [Timer frequency](https://elinux.org/Kernel_Timer_Systems)
++ PREEMPT (low latency desktop) [Kernel preemption](https://en.wikipedia.org/wiki/Kerneemption)
 + RCU priority boosting enabled [RCU priority boosting](https://wiki.linuxfoundation.org/realtime/documentation/technical_details/rcu#rcu_priority_boosting)
-+ lz4 compression (fastest tested on this laptop) [LZ4 compression](https://en.wikipedia.org/wiki/LZ4_(compression_algorithm))
++ zstd compression (fastest tested on this laptop)
 + -O3 optimization level [Optimization levels](https://gcc.gnu.org/onlinedocs/gnat_ugn/Optimization-Levels.html)
 + BBR tcp congestion algorithm [TCP congestion control](https://en.wikipedia.org/wiki/TCP_congestion_control)
 + Tailor made for MSI GF63 Thin 9SC and optimized for Intel
