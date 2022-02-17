@@ -125,9 +125,9 @@ else
         cflags-$(CONFIG_MBOBCAT) 	+= -march=btver1
         cflags-$(CONFIG_MJAGUAR) 	+= -march=btver2
         cflags-$(CONFIG_MBULLDOZER) 	+= -march=bdver1
-        cflags-$(CONFIG_MPILEDRIVER)	+= -march=bdver2
-        cflags-$(CONFIG_MSTEAMROLLER) 	+= -march=bdver3
-        cflags-$(CONFIG_MEXCAVATOR) 	+= -march=bdver4
+        cflags-$(CONFIG_MPILEDRIVER)	+= -march=bdver2 -mno-tbm
+        cflags-$(CONFIG_MSTEAMROLLER) 	+= -march=bdver3 -mno-tbm
+        cflags-$(CONFIG_MEXCAVATOR) 	+= -march=bdver4 -mno-tbm
         cflags-$(CONFIG_MZEN) 		+= -march=znver1
         cflags-$(CONFIG_MZEN2) 	+= -march=znver2
         cflags-$(CONFIG_MZEN3) 	+= -march=znver3
@@ -319,8 +319,6 @@ endif
 archclean:
 	$(Q)rm -rf $(objtree)/arch/i386
 	$(Q)rm -rf $(objtree)/arch/x86_64
-	$(Q)$(MAKE) $(clean)=$(boot)
-	$(Q)$(MAKE) $(clean)=arch/x86/tools
 
 define archhelp
   echo  '* bzImage		- Compressed kernel image (arch/x86/boot/bzImage)'
@@ -335,7 +333,7 @@ define archhelp
   echo  '  isoimage		- Create a boot CD-ROM image (arch/x86/boot/image.iso)'
   echo  '			  bzdisk/fdimage*/hdimage/isoimage also accept:'
   echo  '			  FDARGS="..."  arguments for the booted kernel'
-  echo  '                  	  FDINITRD=file initrd for the booted kernel'
+  echo  '			  FDINITRD=file initrd for the booted kernel'
   echo  ''
   echo  '  kvm_guest.config	- Enable Kconfig items for running this kernel as a KVM guest'
   echo  '  xen.config		- Enable Kconfig items for running this kernel as a Xen guest'

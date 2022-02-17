@@ -349,7 +349,6 @@ deps_config := \
 	drivers/staging/mt7621-dts/Kconfig \
 	drivers/staging/ralink-gdma/Kconfig \
 	drivers/staging/mt7621-dma/Kconfig \
-	drivers/staging/mt7621-pci/Kconfig \
 	drivers/staging/pi433/Kconfig \
 	drivers/staging/vc04_services/vchiq-mmal/Kconfig \
 	drivers/staging/vc04_services/bcm2835-camera/Kconfig \
@@ -369,7 +368,6 @@ deps_config := \
 	drivers/staging/unisys/visornic/Kconfig \
 	drivers/staging/unisys/Kconfig \
 	drivers/staging/gs_fpgaboot/Kconfig \
-	drivers/staging/netlogic/Kconfig \
 	drivers/staging/fwserial/Kconfig \
 	drivers/staging/gdm724x/Kconfig \
 	drivers/staging/board/Kconfig \
@@ -572,6 +570,7 @@ deps_config := \
 	sound/soc/bcm/Kconfig \
 	sound/soc/au1x/Kconfig \
 	sound/soc/atmel/Kconfig \
+	sound/soc/amd/acp/Kconfig \
 	sound/soc/amd/Kconfig \
 	sound/soc/adi/Kconfig \
 	sound/soc/Kconfig \
@@ -629,7 +628,6 @@ deps_config := \
 	drivers/gpu/drm/tiny/Kconfig \
 	drivers/gpu/drm/meson/Kconfig \
 	drivers/gpu/drm/mxsfb/Kconfig \
-	drivers/gpu/drm/zte/Kconfig \
 	drivers/gpu/drm/mediatek/Kconfig \
 	drivers/gpu/drm/hisilicon/kirin/Kconfig \
 	drivers/gpu/drm/hisilicon/hibmc/Kconfig \
@@ -913,6 +911,7 @@ deps_config := \
 	drivers/net/wireless/st/cw1200/Kconfig \
 	drivers/net/wireless/st/Kconfig \
 	drivers/net/wireless/rsi/Kconfig \
+	drivers/net/wireless/realtek/rtw89/Kconfig \
 	drivers/net/wireless/realtek/rtw88/Kconfig \
 	drivers/net/wireless/realtek/rtl8xxxu/Kconfig \
 	drivers/net/wireless/realtek/rtlwifi/Kconfig \
@@ -1069,6 +1068,7 @@ deps_config := \
 	drivers/net/ethernet/brocade/Kconfig \
 	drivers/net/ethernet/broadcom/Kconfig \
 	drivers/net/ethernet/atheros/Kconfig \
+	drivers/net/ethernet/asix/Kconfig \
 	drivers/net/ethernet/arc/Kconfig \
 	drivers/net/ethernet/aquantia/Kconfig \
 	drivers/net/ethernet/apple/Kconfig \
@@ -1153,6 +1153,7 @@ deps_config := \
 	drivers/misc/echo/Kconfig \
 	drivers/misc/genwqe/Kconfig \
 	drivers/misc/vmw_vmci/Kconfig \
+	drivers/misc/mei/pxp/Kconfig \
 	drivers/misc/mei/hdcp/Kconfig \
 	drivers/misc/mei/Kconfig \
 	drivers/misc/altera-stapl/Kconfig \
@@ -1203,6 +1204,7 @@ deps_config := \
 	drivers/firmware/imx/Kconfig \
 	drivers/firmware/efi/Kconfig \
 	drivers/firmware/google/Kconfig \
+	drivers/firmware/cirrus/Kconfig \
 	drivers/firmware/broadcom/Kconfig \
 	drivers/firmware/arm_ffa/Kconfig \
 	drivers/firmware/arm_scmi/Kconfig \
@@ -1383,15 +1385,14 @@ deps_config := \
 	kernel/irq/Kconfig \
 	init/Kconfig \
 	scripts/Kconfig.include \
-	Kconfig
+	Kconfig \
 
-include/config/auto.conf: \
-	$(deps_config)
+include/config/auto.conf: $(deps_config)
 
 ifneq "$(ARCH)" "x86"
 include/config/auto.conf: FORCE
 endif
-ifneq "$(KERNELVERSION)" "5.15.0-MiniBeast"
+ifneq "$(KERNELVERSION)" "5.16.10-MiniBeast"
 include/config/auto.conf: FORCE
 endif
 ifneq "$(CC)" "gcc"
@@ -1403,7 +1404,7 @@ endif
 ifneq "$(srctree)" "."
 include/config/auto.conf: FORCE
 endif
-ifneq "$(CC_VERSION_TEXT)" "gcc (GCC) 11.1.0"
+ifneq "$(CC_VERSION_TEXT)" "gcc (GCC) 11.2.0"
 include/config/auto.conf: FORCE
 endif
 ifneq "$(NM)" "nm"
